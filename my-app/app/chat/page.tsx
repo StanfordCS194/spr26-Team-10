@@ -1,13 +1,21 @@
 import { messages } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import LanguageDropdown from "./LanguageDropdown";
 
 export default function ChatPage() {
   return (
     <div style={{ display: "flex", height: "100vh" }}>
       {/* Sidebar */}
-      <div style={{ width: "260px", background: "#e2e8f0", flexShrink: 0 }}>
-        <p>Sidebar</p>
+      <div
+        style={{
+          width: "260px",
+          background: "#e2e8f0",
+          flexShrink: 0,
+          padding: "16px",
+        }}
+      >
+        <LanguageDropdown />
       </div>
 
       {/* Chat area */}
