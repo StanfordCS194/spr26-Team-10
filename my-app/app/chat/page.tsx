@@ -1,5 +1,6 @@
 import { messages } from "./messages";
 import MessageBubble from "./MessageBubble";
+import ChatInput from "./ChatInput";
 
 export default function ChatPage() {
   return (
@@ -23,6 +24,7 @@ export default function ChatPage() {
             <MessageBubble key={m.id} message={m} />
           ))}
         </div>
+        <ChatInput />
       </div>
     </div>
   );
