@@ -1,20 +1,28 @@
-// Chat message bubble component.
-// Renders AI and user messages differently based on the role prop.
+import type { UIMessage } from "ai";
+import { messageMeta } from "./messages";
 
-import { Message } from "./messages";
+function getText(message: UIMessage): string {
+  return message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
+}
 
 export default function MessageBubble({
   message,
   onSuggestionClick,
 }: {
-  message: Message;
+  message: UIMessage;
   onSuggestionClick?: (value: string) => void;
 }) {
+  const text = getText(message);
+  const meta = messageMeta[message.id];
+
   if (message.role === "user") {
     return (
       <div className="mb-3 flex justify-end">
         <div className="max-w-[75%] rounded-2xl bg-[var(--navy)] px-5 py-4 text-sm leading-6 text-white shadow-sm">
-          <p>{message.text}</p>
+          <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
     );
@@ -22,16 +30,14 @@ export default function MessageBubble({
 
   return (
     <div className="mb-3 flex gap-3">
-      {/* Coral avatar */}
       <div className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--coral)]" />
 
       <div className="max-w-[78%] rounded-2xl border border-[#efe6df] bg-white px-4 py-4 text-sm leading-6 text-[var(--navy)] shadow-sm">
-        <p>{message.text}</p>
+        <p className="whitespace-pre-wrap">{text}</p>
 
-        {/* Suggestion chips */}
-        {message.suggestions && (
+        {meta?.suggestions && (
           <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {message.suggestions.map((s) => (
+            {meta.suggestions.map((s) => (
               <button
                 key={s}
                 onClick={() => onSuggestionClick?.(s)}
@@ -43,9 +49,9 @@ export default function MessageBubble({
           </div>
         )}
 
-        {message.annotations && (
+        {meta?.annotations && (
           <div className="mt-4 space-y-2">
-            {message.annotations.map((annotation) => (
+            {meta.annotations.map((annotation) => (
               <div
                 key={annotation.title}
                 className="rounded-xl border border-[#efe3be] bg-[#fff9e8] px-3 py-2"
@@ -56,16 +62,17 @@ export default function MessageBubble({
                 <p className="mt-1 text-[13px] font-semibold text-[var(--navy)]">
                   {annotation.title}
                 </p>
-                <p className="mt-0.5 text-xs text-[#7a6a45]">{annotation.detail}</p>
+                <p className="mt-0.5 text-xs text-[#7a6a45]">
+                  {annotation.detail}
+                </p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Citation chip */}
-        {message.citation && (
+        {meta?.citation && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#f6d4cb] bg-[#fff5f2] px-3 py-1 text-xs text-[var(--coral)]">
-            Source: {message.citation}
+            Source: {meta.citation}
           </div>
         )}
       </div>
