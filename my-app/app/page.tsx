@@ -8,7 +8,7 @@ export default function Home() {
   const [step, setStep] = useState<1 | 2>(1);
 
   return (
-    <main className="min-h-screen bg-[var(--cream)] px-8 py-6">
+    <main className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8">
       {/* Top right language button */}
       <div className="flex justify-end">
         <button className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)] shadow-md">
@@ -16,17 +16,17 @@ export default function Home() {
         </button>
       </div>
 
-      <section className="mx-auto flex max-w-4xl flex-col items-center pt-10">
+      <section className="mx-auto flex max-w-4xl flex-col items-center pt-6 sm:pt-10">
         {/* Logo */}
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--coral)] text-4xl text-white shadow-lg"></div>
 
         {/* Title */}
-        <h1 className="text-center text-5xl font-bold text-[var(--navy)]">
+        <h1 className="text-center text-3xl font-bold text-[var(--navy)] sm:text-5xl">
           Welcome to formly.ai
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-6 text-center text-xl leading-8 text-gray-500">
+        <p className="mt-4 text-center text-base leading-7 text-gray-500 sm:mt-6 sm:text-xl sm:leading-8">
           Your trusted guide for understanding government documents.
           <br />
           Upload a form to get started.
@@ -59,23 +59,23 @@ export default function Home() {
         </div>
 
         {/* Upload card */}
-        <div className="mt-14 w-full max-w-2xl rounded-3xl bg-white p-10 shadow-xl">
+        <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-xl sm:mt-14 sm:p-10">
           {step === 1 ? (
-            <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-10 py-16 text-center">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FFF2EF] text-4xl text-[var(--coral)]">
+            <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF2EF] text-3xl text-[var(--coral)] sm:h-20 sm:w-20 sm:text-4xl">
                 ↑
               </div>
 
-              <h2 className="text-2xl font-bold text-[var(--navy)]">
+              <h2 className="text-xl font-bold text-[var(--navy)] sm:text-2xl">
                 Upload Your Document
               </h2>
 
-              <p className="mx-auto mt-5 max-w-md text-lg leading-8 text-gray-500">
+              <p className="mx-auto mt-4 max-w-md text-base leading-7 text-gray-500 sm:mt-5 sm:text-lg sm:leading-8">
                 Take a photo or upload a PDF of your government form. We accept
                 images and PDF files.
               </p>
 
-              <div className="mt-8 flex justify-center gap-6 text-sm font-medium text-gray-500">
+              <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-medium text-gray-500 sm:mt-8 sm:gap-6">
                 <span>🖼️ PNG, JPG</span>
                 <span>📄 PDF</span>
                 <span>📷 Photo</span>
@@ -91,7 +91,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="rounded-3xl border border-[#E8D8D1] bg-[#fffaf8] p-6">
+            <div className="rounded-3xl border border-[#E8D8D1] bg-[#fffaf8] p-4 sm:p-6">
               <h2 className="text-xl font-bold text-[var(--navy)]">
                 Review OCR extraction
               </h2>
@@ -104,7 +104,7 @@ export default function Home() {
                 shown on your passport or birth certificate.
               </div>
 
-              <div className="mt-5 flex gap-3">
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={() => setStep(1)}
                   className="rounded-xl border border-[#d9cdc2] px-4 py-2 text-sm font-semibold text-[var(--navy)]"
@@ -122,7 +122,7 @@ export default function Home() {
           )}
 
           {/* Privacy section */}
-          <div className="mt-8 flex gap-5 rounded-3xl border border-[#F4D8D2] bg-[#FFF8F6] p-6">
+          <div className="mt-8 flex gap-4 rounded-3xl border border-[#F4D8D2] bg-[#FFF8F6] p-4 sm:gap-5 sm:p-6">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--coral)]">
               🔒
             </div>

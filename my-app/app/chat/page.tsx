@@ -105,9 +105,9 @@ export default function ChatPage() {
   return (
     <main
       dir={isRtl ? "rtl" : "ltr"}
-      className="flex min-h-screen bg-[#F8F5F1]"
+      className="flex min-h-screen flex-col bg-[#F8F5F1] md:flex-row"
     >
-      <aside className="flex w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4">
+      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4 md:flex">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--coral)] text-white">
@@ -159,15 +159,48 @@ export default function ChatPage() {
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-[#efe6df] bg-white px-6 py-4">
-          <h1 className="text-3xl font-semibold text-[var(--navy)]">
+        <header className="border-b border-[#efe6df] bg-white px-4 py-3 sm:px-6 sm:py-4">
+          <div className="mb-3 flex items-center justify-between md:hidden">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--coral)] text-sm text-white">
+                ✦
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--navy)]">formly.ai</p>
+                <p className="text-[11px] text-gray-500">Your guide</p>
+              </div>
+            </div>
+            <LanguageDropdown
+              selected={selectedLanguage}
+              onSelect={setSelectedLanguage}
+            />
+          </div>
+          <h1 className="text-2xl font-semibold text-[var(--navy)] sm:text-3xl">
             Understanding Your Form
           </h1>
           <p className="mt-1 text-sm text-gray-500">{labels.subtitle}</p>
         </header>
 
+        <div className="border-b border-[#efe6df] bg-white px-4 py-3 md:hidden">
+          <div className="mb-3 rounded-xl border border-[#efe6df] bg-[#fbf8f5] p-3">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              {labels.currentDocument}
+            </p>
+            <p className="text-sm font-semibold text-[var(--navy)]">analytics.png</p>
+            <p className="text-xs text-gray-500">Employment Authorization</p>
+          </div>
+          <div className="rounded-xl bg-[#1C2B3A] p-3 text-white">
+            <p className="mb-2 text-sm font-semibold">{labels.actionItems}</p>
+            <ol className="space-y-2 text-xs">
+              <li>{labels.gatherDocs}</li>
+              <li>{labels.filingFee}</li>
+              <li>{labels.deadline}</li>
+            </ol>
+          </div>
+        </div>
+
         <div className="flex min-h-0 flex-1 flex-col bg-[#F8F5F1]">
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             {thread.map((m) => (
               <MessageBubble
                 key={m.id}
