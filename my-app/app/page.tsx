@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-[var(--cream)] px-8 py-6">
@@ -45,6 +47,15 @@ export default function Home() {
               <span>🖼️ PNG, JPG</span>
               <span>📄 PDF</span>
               <span>📷 Photo</span>
+            </div>
+
+            <div className="mt-8">
+              <Link
+                href="/chat"
+                className="inline-flex rounded-xl bg-[var(--coral)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95"
+              >
+                Upload and continue
+              </Link>
             </div>
           </div>
 
