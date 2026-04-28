@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { messages, Message } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
@@ -111,11 +112,14 @@ export default function ChatPage() {
       <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4 md:flex">
         <div className="mb-6">
           <div className="flex items-center gap-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-[var(--coral)]" />
-            <div>
-              <p className="text-sm font-semibold text-[var(--navy)]">formly.ai</p>
-              <p className="text-xs text-gray-500">Your guide</p>
-            </div>
+            <Image
+              src="/formly-logo.png"
+              alt="formly.ai logo"
+              width={90}
+              height={70}
+              className="h-auto w-[72px]"
+            />
+            <p className="text-xs text-gray-500">Your guide</p>
           </div>
         </div>
 
@@ -164,11 +168,14 @@ export default function ChatPage() {
         <header className="border-b border-[#efe6df] bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="mb-3 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-[var(--coral)]" />
-              <div>
-                <p className="text-sm font-semibold text-[var(--navy)]">formly.ai</p>
-                <p className="text-[11px] text-gray-500">Your guide</p>
-              </div>
+              <Image
+                src="/formly-logo.png"
+                alt="formly.ai logo"
+                width={82}
+                height={64}
+                className="h-auto w-[66px]"
+              />
+              <p className="text-[11px] text-gray-500">Your guide</p>
             </div>
             <LanguageDropdown
               selected={selectedLanguage}

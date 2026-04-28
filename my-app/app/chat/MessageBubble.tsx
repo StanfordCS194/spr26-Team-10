@@ -13,7 +13,7 @@ export default function MessageBubble({
   if (message.role === "user") {
     return (
       <div className="mb-3 flex justify-end">
-        <div className="max-w-[75%] rounded-2xl bg-[#1C2B3A] px-5 py-4 text-sm leading-6 text-white shadow-sm">
+        <div className="max-w-[75%] rounded-2xl bg-[var(--navy)] px-5 py-4 text-sm leading-6 text-white shadow-sm">
           <p>{message.text}</p>
         </div>
       </div>

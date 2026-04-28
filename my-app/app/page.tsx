@@ -2,24 +2,46 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import LanguageDropdown, {
+  LanguageOption,
+  languages,
+} from "./chat/LanguageDropdown";
 
 export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
+    languages[0]
+  );
+  const isRtl = selectedLanguage.code === "ar";
 
   return (
-    <main className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8">
+    <main
+      dir={isRtl ? "rtl" : "ltr"}
+      className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8"
+    >
       {/* Top right language button */}
       <div className="flex justify-end">
-        <button className="rounded-full border border-[#e8ddd3] bg-white px-4 py-2 text-xs font-medium text-[var(--navy)] shadow-sm">
-          English
-        </button>
+        <LanguageDropdown
+          selected={selectedLanguage}
+          onSelect={setSelectedLanguage}
+        />
       </div>
 
       <section className="mx-auto flex max-w-4xl flex-col items-center pt-6 sm:pt-10">
         {/* Logo */}
-        <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--coral)] text-4xl text-white shadow-lg"></div>
+        <div className="mb-6">
+          <Image
+            src="/formly-logo.png"
+            alt="formly.ai logo"
+            width={190}
+            height={150}
+            className="h-auto w-[160px] sm:w-[190px]"
+            priority
+          />
+        </div>
 
         {/* Title */}
         <h1 className="text-center text-3xl font-semibold text-[var(--navy)] sm:text-5xl">
@@ -60,7 +82,7 @@ export default function Home() {
         </div>
 
         {/* Upload card */}
-        <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-xl sm:mt-14 sm:p-10">
+        <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-sm sm:mt-14 sm:p-10">
           {step === 1 ? (
             <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
               <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF2EF] sm:h-20 sm:w-20">
@@ -162,7 +184,7 @@ export default function Home() {
             </div>
 
             <div>
-              <h3 className="font-bold text-[var(--navy)]">
+              <h3 className="font-semibold text-[var(--navy)]">
                 Your Privacy Matters
               </h3>
 
