@@ -6,7 +6,10 @@ import Image from "next/image";
 import { messages, Message } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
-import LanguageDropdown, { languages, LanguageOption } from "./LanguageDropdown";
+import LanguageDropdown, {
+  languages,
+  LanguageOption,
+} from "./LanguageDropdown";
 
 const uiLabels: Record<
   LanguageOption["code"],
@@ -71,14 +74,14 @@ export default function ChatPage() {
   const [thread, setThread] = useState<Message[]>(messages);
   const [inputValue, setInputValue] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
-    languages[0]
+    languages[0],
   );
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
 
   const nextId = useMemo(
     () => thread.reduce((maxId, message) => Math.max(maxId, message.id), 0) + 1,
-    [thread]
+    [thread],
   );
 
   const sendMessage = () => {
@@ -111,15 +114,14 @@ export default function ChatPage() {
     >
       <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4 md:flex">
         <div className="mb-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Image
-              src="/formly-logo.png?v=3"
+              src="/formly_nobackground.png"
               alt="formly.ai logo"
-              width={90}
-              height={70}
-              className="h-auto w-[72px]"
+              width={120}
+              height={96}
+              className="h-auto w-[84px] shrink-0 object-contain"
             />
-            <p className="text-xs text-gray-500">Your guide</p>
           </div>
         </div>
 
@@ -134,7 +136,9 @@ export default function ChatPage() {
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
             {labels.currentDocument}
           </p>
-          <p className="text-sm font-semibold text-[var(--navy)]">analytics.png</p>
+          <p className="text-sm font-semibold text-[var(--navy)]">
+            analytics.png
+          </p>
           <p className="text-xs text-gray-500">Employment Authorization</p>
         </div>
 
@@ -143,15 +147,21 @@ export default function ChatPage() {
           <ol className="space-y-3 text-sm">
             <li>
               <p className="font-medium">{labels.gatherDocs}</p>
-              <p className="text-xs text-slate-300">Copy of passport, visa, I-94</p>
+              <p className="text-xs text-slate-300">
+                Copy of passport, visa, I-94
+              </p>
             </li>
             <li>
               <p className="font-medium">{labels.filingFee}</p>
-              <p className="text-xs text-slate-300">$410 (check or money order)</p>
+              <p className="text-xs text-slate-300">
+                $410 (check or money order)
+              </p>
             </li>
             <li>
               <p className="font-medium">{labels.deadline}</p>
-              <p className="text-xs text-slate-300">Submit before June 15, 2026</p>
+              <p className="text-xs text-slate-300">
+                Submit before June 15, 2026
+              </p>
             </li>
           </ol>
         </div>
@@ -167,15 +177,14 @@ export default function ChatPage() {
       <section className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-[#efe6df] bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="mb-3 flex items-center justify-between md:hidden">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <Image
-                src="/formly-logo.png?v=3"
+                src="/formly_nobackground.png"
                 alt="formly.ai logo"
-                width={82}
-                height={64}
-                className="h-auto w-[66px]"
+                width={106}
+                height={84}
+                className="h-auto w-[76px] shrink-0 object-contain"
               />
-              <p className="text-[11px] text-gray-500">Your guide</p>
             </div>
             <LanguageDropdown
               selected={selectedLanguage}
@@ -193,7 +202,9 @@ export default function ChatPage() {
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
               {labels.currentDocument}
             </p>
-            <p className="text-sm font-semibold text-[var(--navy)]">analytics.png</p>
+            <p className="text-sm font-semibold text-[var(--navy)]">
+              analytics.png
+            </p>
             <p className="text-xs text-gray-500">Employment Authorization</p>
           </div>
           <div className="rounded-xl bg-[#1C2B3A] p-3 text-white">
