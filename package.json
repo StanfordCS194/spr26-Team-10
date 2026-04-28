@@ -1,0 +1,22 @@
+{
+  "name": "spr26-team-10",
+  "version": "1.0.0",
+  "description": "Eva Tom Ruba Ahmed",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/StanfordCS194/spr26-Team-10/issues"
+  },
+  "homepage": "https://github.com/StanfordCS194/spr26-Team-10#readme",
+  "dependencies": {
+    "playwright": "^1.59.1"
+  }
+}
