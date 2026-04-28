@@ -34,7 +34,7 @@ export default function Home() {
         {/* Logo */}
         <div className="mb-6">
           <Image
-            src="/formly-logo.png"
+            src="/formly-logo.png?v=3"
             alt="formly.ai logo"
             width={190}
             height={150}

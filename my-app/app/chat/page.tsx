@@ -113,7 +113,7 @@ export default function ChatPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <Image
-              src="/formly-logo.png"
+              src="/formly-logo.png?v=3"
               alt="formly.ai logo"
               width={90}
               height={70}
@@ -169,7 +169,7 @@ export default function ChatPage() {
           <div className="mb-3 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
               <Image
-                src="/formly-logo.png"
+                src="/formly-logo.png?v=3"
                 alt="formly.ai logo"
                 width={82}
                 height={64}
