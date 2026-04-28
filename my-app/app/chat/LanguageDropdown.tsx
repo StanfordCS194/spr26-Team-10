@@ -5,7 +5,13 @@
 
 import { useState } from "react";
 
-const languages = [
+export type LanguageOption = {
+  code: "en" | "es" | "zh" | "ar" | "fr";
+  flag: string;
+  label: string;
+};
+
+export const languages: LanguageOption[] = [
   { code: "en", flag: "🇺🇸", label: "English" },
   { code: "es", flag: "🇪🇸", label: "Español" },
   { code: "zh", flag: "🇨🇳", label: "中文" },
@@ -13,8 +19,15 @@ const languages = [
   { code: "fr", flag: "🇫🇷", label: "Français" },
 ];
 
-export default function LanguageDropdown() {
-  const [selected, setSelected] = useState(languages[0]);
+type LanguageDropdownProps = {
+  selected: LanguageOption;
+  onSelect: (language: LanguageOption) => void;
+};
+
+export default function LanguageDropdown({
+  selected,
+  onSelect,
+}: LanguageDropdownProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -58,7 +71,7 @@ export default function LanguageDropdown() {
             <button
               key={lang.code}
               onClick={() => {
-                setSelected(lang);
+                onSelect(lang);
                 setOpen(false);
               }}
               style={{

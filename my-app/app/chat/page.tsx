@@ -4,11 +4,75 @@ import { useMemo, useState } from "react";
 import { messages, Message } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
-import LanguageDropdown from "./LanguageDropdown";
+import LanguageDropdown, { languages, LanguageOption } from "./LanguageDropdown";
+
+const uiLabels: Record<
+  LanguageOption["code"],
+  {
+    subtitle: string;
+    currentDocument: string;
+    actionItems: string;
+    gatherDocs: string;
+    filingFee: string;
+    deadline: string;
+    uploadNewDocument: string;
+  }
+> = {
+  en: {
+    subtitle: "Ask me anything about your document",
+    currentDocument: "Current Document",
+    actionItems: "Action Items",
+    gatherDocs: "Gather Required Documents",
+    filingFee: "Filing Fee",
+    deadline: "Deadline",
+    uploadNewDocument: "Upload New Document",
+  },
+  es: {
+    subtitle: "Preguntame cualquier cosa sobre tu documento",
+    currentDocument: "Documento Actual",
+    actionItems: "Tareas",
+    gatherDocs: "Reune los documentos requeridos",
+    filingFee: "Tarifa de Presentacion",
+    deadline: "Fecha Limite",
+    uploadNewDocument: "Subir Nuevo Documento",
+  },
+  zh: {
+    subtitle: "你可以问我任何与文件有关的问题",
+    currentDocument: "当前文件",
+    actionItems: "操作事项",
+    gatherDocs: "准备所需文件",
+    filingFee: "申请费用",
+    deadline: "截止日期",
+    uploadNewDocument: "上传新文件",
+  },
+  ar: {
+    subtitle: "اسالني اي شيء عن مستندك",
+    currentDocument: "المستند الحالي",
+    actionItems: "عناصر العمل",
+    gatherDocs: "جمع المستندات المطلوبة",
+    filingFee: "رسوم التقديم",
+    deadline: "الموعد النهائي",
+    uploadNewDocument: "تحميل مستند جديد",
+  },
+  fr: {
+    subtitle: "Posez-moi des questions sur votre document",
+    currentDocument: "Document Actuel",
+    actionItems: "Actions",
+    gatherDocs: "Rassembler les documents requis",
+    filingFee: "Frais de depot",
+    deadline: "Date limite",
+    uploadNewDocument: "Televerser un nouveau document",
+  },
+};
 
 export default function ChatPage() {
   const [thread, setThread] = useState<Message[]>(messages);
   const [inputValue, setInputValue] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
+    languages[0]
+  );
+  const labels = uiLabels[selectedLanguage.code];
+  const isRtl = selectedLanguage.code === "ar";
 
   const nextId = useMemo(
     () => thread.reduce((maxId, message) => Math.max(maxId, message.id), 0) + 1,
@@ -39,7 +103,10 @@ export default function ChatPage() {
   };
 
   return (
-    <main className="flex min-h-screen bg-[#F8F5F1]">
+    <main
+      dir={isRtl ? "rtl" : "ltr"}
+      className="flex min-h-screen bg-[#F8F5F1]"
+    >
       <aside className="flex w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4">
         <div className="mb-6">
           <div className="flex items-center gap-2">
@@ -54,37 +121,40 @@ export default function ChatPage() {
         </div>
 
         <div className="mb-5">
-          <LanguageDropdown />
+          <LanguageDropdown
+            selected={selectedLanguage}
+            onSelect={setSelectedLanguage}
+          />
         </div>
 
         <div className="mb-4 rounded-xl border border-[#efe6df] bg-[#fbf8f5] p-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Current Document
+            {labels.currentDocument}
           </p>
           <p className="text-sm font-semibold text-[var(--navy)]">analytics.png</p>
           <p className="text-xs text-gray-500">Employment Authorization</p>
         </div>
 
         <div className="rounded-2xl bg-[#1C2B3A] p-4 text-white">
-          <p className="mb-3 text-sm font-semibold">Action Items</p>
+          <p className="mb-3 text-sm font-semibold">{labels.actionItems}</p>
           <ol className="space-y-3 text-sm">
             <li>
-              <p className="font-medium">Gather Required Documents</p>
+              <p className="font-medium">{labels.gatherDocs}</p>
               <p className="text-xs text-slate-300">Copy of passport, visa, I-94</p>
             </li>
             <li>
-              <p className="font-medium">Filing Fee</p>
+              <p className="font-medium">{labels.filingFee}</p>
               <p className="text-xs text-slate-300">$410 (check or money order)</p>
             </li>
             <li>
-              <p className="font-medium">Deadline</p>
+              <p className="font-medium">{labels.deadline}</p>
               <p className="text-xs text-slate-300">Submit before June 15, 2026</p>
             </li>
           </ol>
         </div>
 
         <button className="mt-auto rounded-xl border border-[#efe6df] bg-[#fbf8f5] px-4 py-3 text-sm font-medium text-[var(--navy)]">
-          Upload New Document
+          {labels.uploadNewDocument}
         </button>
       </aside>
 
@@ -93,9 +163,7 @@ export default function ChatPage() {
           <h1 className="text-3xl font-semibold text-[var(--navy)]">
             Understanding Your Form
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Ask me anything about your document
-          </p>
+          <p className="mt-1 text-sm text-gray-500">{labels.subtitle}</p>
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col bg-[#F8F5F1]">
