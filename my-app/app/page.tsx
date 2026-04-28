@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const [selectedFileName, setSelectedFileName] = useState("");
 
   return (
     <main className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8">
       {/* Top right language button */}
       <div className="flex justify-end">
-        <button className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)] shadow-md">
-          🌐 🇺🇸 English
+        <button className="rounded-full border border-[#e8ddd3] bg-white px-4 py-2 text-xs font-medium text-[var(--navy)] shadow-sm">
+          English
         </button>
       </div>
 
@@ -21,7 +22,7 @@ export default function Home() {
         <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--coral)] text-4xl text-white shadow-lg"></div>
 
         {/* Title */}
-        <h1 className="text-center text-3xl font-bold text-[var(--navy)] sm:text-5xl">
+        <h1 className="text-center text-3xl font-semibold text-[var(--navy)] sm:text-5xl">
           Welcome to formly.ai
         </h1>
 
@@ -42,7 +43,7 @@ export default function Home() {
           >
             1. Upload
           </span>
-          <span className="text-gray-400">→</span>
+          <span className="h-px w-6 bg-[#d8ccc2]" />
           <span
             className={`rounded-full px-3 py-1 font-semibold ${
               step >= 2
@@ -52,7 +53,7 @@ export default function Home() {
           >
             2. Review extraction
           </span>
-          <span className="text-gray-400">→</span>
+          <span className="h-px w-6 bg-[#d8ccc2]" />
           <span className="rounded-full bg-white px-3 py-1 font-semibold text-[var(--navy)]">
             3. Ask questions
           </span>
@@ -62,11 +63,11 @@ export default function Home() {
         <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-xl sm:mt-14 sm:p-10">
           {step === 1 ? (
             <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF2EF] text-3xl text-[var(--coral)] sm:h-20 sm:w-20 sm:text-4xl">
-                ↑
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF2EF] sm:h-20 sm:w-20">
+                <div className="h-7 w-7 rounded-lg border-2 border-[var(--coral)]" />
               </div>
 
-              <h2 className="text-xl font-bold text-[var(--navy)] sm:text-2xl">
+              <h2 className="text-xl font-semibold text-[var(--navy)] sm:text-2xl">
                 Upload Your Document
               </h2>
 
@@ -75,16 +76,49 @@ export default function Home() {
                 images and PDF files.
               </p>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm font-medium text-gray-500 sm:mt-8 sm:gap-6">
-                <span>🖼️ PNG, JPG</span>
-                <span>📄 PDF</span>
-                <span>📷 Photo</span>
+              <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium text-gray-500 sm:mt-8">
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  PNG
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  JPG
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  PDF
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  Photo
+                </span>
               </div>
+
+              <div className="mt-5 flex justify-center">
+                <label
+                  htmlFor="document-upload"
+                  className="cursor-pointer rounded-xl border border-[#d9cdc2] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                >
+                  Choose file
+                </label>
+                <input
+                  id="document-upload"
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setSelectedFileName(file ? file.name : "");
+                  }}
+                />
+              </div>
+
+              {selectedFileName && (
+                <p className="mt-3 text-sm text-gray-600">{selectedFileName}</p>
+              )}
 
               <div className="mt-8">
                 <button
                   onClick={() => setStep(2)}
-                  className="inline-flex rounded-xl bg-[var(--coral)] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95"
+                  disabled={!selectedFileName}
+                  className="inline-flex rounded-xl bg-[var(--coral)] px-5 py-3 text-sm font-medium text-white transition enabled:hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Upload and continue
                 </button>
@@ -92,7 +126,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="rounded-3xl border border-[#E8D8D1] bg-[#fffaf8] p-4 sm:p-6">
-              <h2 className="text-xl font-bold text-[var(--navy)]">
+              <h2 className="text-xl font-semibold text-[var(--navy)]">
                 Review OCR extraction
               </h2>
               <p className="mt-2 text-sm text-gray-600">
@@ -123,8 +157,8 @@ export default function Home() {
 
           {/* Privacy section */}
           <div className="mt-8 flex gap-4 rounded-3xl border border-[#F4D8D2] bg-[#FFF8F6] p-4 sm:gap-5 sm:p-6">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--coral)]">
-              🔒
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+              <div className="h-3 w-3 rounded-sm border border-[var(--coral)]" />
             </div>
 
             <div>

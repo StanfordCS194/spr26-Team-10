@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { messages, Message } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
@@ -110,9 +111,7 @@ export default function ChatPage() {
       <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4 md:flex">
         <div className="mb-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--coral)] text-white">
-              ✦
-            </div>
+            <div className="h-2.5 w-2.5 rounded-full bg-[var(--coral)]" />
             <div>
               <p className="text-sm font-semibold text-[var(--navy)]">formly.ai</p>
               <p className="text-xs text-gray-500">Your guide</p>
@@ -153,18 +152,19 @@ export default function ChatPage() {
           </ol>
         </div>
 
-        <button className="mt-auto rounded-xl border border-[#efe6df] bg-[#fbf8f5] px-4 py-3 text-sm font-medium text-[var(--navy)]">
+        <Link
+          href="/"
+          className="mt-auto rounded-xl border border-[#efe6df] bg-[#fbf8f5] px-4 py-3 text-center text-sm font-medium text-[var(--navy)]"
+        >
           {labels.uploadNewDocument}
-        </button>
+        </Link>
       </aside>
 
       <section className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-[#efe6df] bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="mb-3 flex items-center justify-between md:hidden">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--coral)] text-sm text-white">
-                ✦
-              </div>
+              <div className="h-2.5 w-2.5 rounded-full bg-[var(--coral)]" />
               <div>
                 <p className="text-sm font-semibold text-[var(--navy)]">formly.ai</p>
                 <p className="text-[11px] text-gray-500">Your guide</p>

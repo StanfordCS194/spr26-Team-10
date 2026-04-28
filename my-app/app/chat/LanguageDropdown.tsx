@@ -7,16 +7,15 @@ import { useState } from "react";
 
 export type LanguageOption = {
   code: "en" | "es" | "zh" | "ar" | "fr";
-  flag: string;
   label: string;
 };
 
 export const languages: LanguageOption[] = [
-  { code: "en", flag: "🇺🇸", label: "English" },
-  { code: "es", flag: "🇪🇸", label: "Español" },
-  { code: "zh", flag: "🇨🇳", label: "中文" },
-  { code: "ar", flag: "🇸🇦", label: "العربية" },
-  { code: "fr", flag: "🇫🇷", label: "Français" },
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "zh", label: "中文" },
+  { code: "ar", label: "العربية" },
+  { code: "fr", label: "Français" },
 ];
 
 type LanguageDropdownProps = {
@@ -31,42 +30,18 @@ export default function LanguageDropdown({
   const [open, setOpen] = useState(false);
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
-      {/* Pill button */}
+    <div className="relative inline-block">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "6px 12px",
-          border: "1px solid #e2e8f0",
-          borderRadius: "20px",
-          background: "white",
-          fontSize: "13px",
-          cursor: "pointer",
-        }}
+        className="inline-flex items-center gap-2 rounded-full border border-[#e8ddd3] bg-white px-3 py-1.5 text-xs font-medium text-[var(--navy)]"
       >
-        <span style={{ fontSize: "14px" }}>{selected.flag}</span>
+        <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--coral)]" />
         <span>{selected.label}</span>
-        <span style={{ fontSize: "10px", color: "#94a3b8" }}>▾</span>
+        <span className="text-[10px] text-gray-400">v</span>
       </button>
 
-      {/* Dropdown list */}
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 6px)",
-            left: 0,
-            background: "white",
-            border: "1px solid #e2e8f0",
-            borderRadius: "12px",
-            overflow: "hidden",
-            zIndex: 10,
-            minWidth: "160px",
-          }}
-        >
+        <div className="absolute left-0 top-[calc(100%+6px)] z-10 min-w-[150px] overflow-hidden rounded-xl border border-[#e8ddd3] bg-white shadow-sm">
           {languages.map((lang) => (
             <button
               key={lang.code}
@@ -74,24 +49,13 @@ export default function LanguageDropdown({
                 onSelect(lang);
                 setOpen(false);
               }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                width: "100%",
-                padding: "10px 14px",
-                border: "none",
-                background: selected.code === lang.code ? "#f8fafc" : "white",
-                fontSize: "13px",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
+              className={`flex w-full items-center px-3 py-2 text-left text-sm ${
+                selected.code === lang.code
+                  ? "bg-[#faf7f3] text-[var(--navy)]"
+                  : "bg-white text-gray-600"
+              }`}
             >
-              <span style={{ fontSize: "16px" }}>{lang.flag}</span>
               <span>{lang.label}</span>
-              {selected.code === lang.code && (
-                <span style={{ marginLeft: "auto", color: "#E8593C" }}>✓</span>
-              )}
             </button>
           ))}
         </div>

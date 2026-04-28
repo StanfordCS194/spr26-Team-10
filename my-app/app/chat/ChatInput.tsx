@@ -26,10 +26,10 @@ export default function ChatInput({ value, onChange, onSend }: ChatInputProps) {
         />
         <button
           onClick={onSend}
-          className="rounded-2xl bg-[var(--coral)] px-4 py-3 text-lg text-white transition hover:opacity-95"
+          className="rounded-2xl bg-[var(--coral)] px-4 py-3 text-sm font-medium text-white transition hover:opacity-95"
           aria-label="Send question"
         >
-          ➤
+          Send
         </button>
       </div>
       <p className="mt-2 text-center text-xs text-gray-500">

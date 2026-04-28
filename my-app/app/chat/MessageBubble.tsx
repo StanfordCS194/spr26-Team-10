@@ -23,9 +23,7 @@ export default function MessageBubble({
   return (
     <div className="mb-3 flex gap-3">
       {/* Coral avatar */}
-      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--coral)] text-sm text-white">
-        ✦
-      </div>
+      <div className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--coral)]" />
 
       <div className="max-w-[78%] rounded-2xl border border-[#efe6df] bg-white px-4 py-4 text-sm leading-6 text-[var(--navy)] shadow-sm">
         <p>{message.text}</p>
@@ -67,7 +65,7 @@ export default function MessageBubble({
         {/* Citation chip */}
         {message.citation && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#f6d4cb] bg-[#fff5f2] px-3 py-1 text-xs text-[var(--coral)]">
-            📄 {message.citation}
+            Source: {message.citation}
           </div>
         )}
       </div>
