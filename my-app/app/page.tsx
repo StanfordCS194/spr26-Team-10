@@ -13,7 +13,7 @@ export default function Home() {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
-    languages[0]
+    languages[0],
   );
   const isRtl = selectedLanguage.code === "ar";
 
@@ -34,7 +34,7 @@ export default function Home() {
         {/* Logo */}
         <div className="mb-6">
           <Image
-            src="/formly-logo.png?v=3"
+            src="/formly_nobackground.png"
             alt="formly.ai logo"
             width={190}
             height={150}
@@ -85,20 +85,16 @@ export default function Home() {
         <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-sm sm:mt-14 sm:p-10">
           {step === 1 ? (
             <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF2EF] sm:h-20 sm:w-20">
-                <div className="h-7 w-7 rounded-lg border-2 border-[var(--coral)]" />
-              </div>
-
               <h2 className="text-xl font-semibold text-[var(--navy)] sm:text-2xl">
                 Upload Your Document
               </h2>
 
-              <p className="mx-auto mt-4 max-w-md text-base leading-7 text-gray-500 sm:mt-5 sm:text-lg sm:leading-8">
+              <p className="mx-auto mt-3 max-w-md text-base leading-7 text-gray-500 sm:mt-4 sm:text-lg sm:leading-8">
                 Take a photo or upload a PDF of your government form. We accept
                 images and PDF files.
               </p>
 
-              <div className="mt-6 flex flex-wrap justify-center gap-2 text-xs font-medium text-gray-500 sm:mt-8">
+              <div className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-medium text-gray-500 sm:mt-7">
                 <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
                   PNG
                 </span>
@@ -116,7 +112,7 @@ export default function Home() {
               <div className="mt-5 flex justify-center">
                 <label
                   htmlFor="document-upload"
-                  className="cursor-pointer rounded-xl border border-[#d9cdc2] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                  className="cursor-pointer rounded-xl border border-[#d9cdc2] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)] transition hover:border-[var(--coral)] hover:bg-[#fff5f2] active:scale-[0.99] focus-within:ring-2 focus-within:ring-[#f3c3b8]"
                 >
                   Choose file
                 </label>
