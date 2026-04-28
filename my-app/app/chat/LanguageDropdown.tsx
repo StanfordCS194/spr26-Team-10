@@ -19,8 +19,8 @@ export const languages: LanguageOption[] = [
 ];
 
 type LanguageDropdownProps = {
-  selected: LanguageOption;
-  onSelect: (language: LanguageOption) => void;
+  selected?: LanguageOption;
+  onSelect?: (language: LanguageOption) => void;
 };
 
 export default function LanguageDropdown({
@@ -28,6 +28,9 @@ export default function LanguageDropdown({
   onSelect,
 }: LanguageDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [localSelected, setLocalSelected] = useState<LanguageOption>(languages[0]);
+  const resolvedSelected = selected ?? localSelected;
+  const resolvedOnSelect = onSelect ?? setLocalSelected;
 
   return (
     <div className="relative inline-block">
@@ -36,7 +39,7 @@ export default function LanguageDropdown({
         className="inline-flex items-center gap-2 rounded-full border border-[#e8ddd3] bg-white px-3 py-1.5 text-xs font-medium text-[var(--navy)]"
       >
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--coral)]" />
-        <span>{selected.label}</span>
+        <span>{resolvedSelected.label}</span>
         <span className="text-[10px] text-gray-400">v</span>
       </button>
 
@@ -46,11 +49,11 @@ export default function LanguageDropdown({
             <button
               key={lang.code}
               onClick={() => {
-                onSelect(lang);
+                resolvedOnSelect(lang);
                 setOpen(false);
               }}
               className={`flex w-full items-center px-3 py-2 text-left text-sm ${
-                selected.code === lang.code
+                resolvedSelected.code === lang.code
                   ? "bg-[#faf7f3] text-[var(--navy)]"
                   : "bg-white text-gray-600"
               }`}
