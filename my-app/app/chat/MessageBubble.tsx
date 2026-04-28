@@ -3,7 +3,13 @@
 
 import { Message } from "./messages";
 
-export default function MessageBubble({ message }: { message: Message }) {
+export default function MessageBubble({
+  message,
+  onSuggestionClick,
+}: {
+  message: Message;
+  onSuggestionClick?: (value: string) => void;
+}) {
   if (message.role === "user") {
     return (
       <div className="mb-3 flex justify-end">
@@ -30,6 +36,7 @@ export default function MessageBubble({ message }: { message: Message }) {
             {message.suggestions.map((s) => (
               <button
                 key={s}
+                onClick={() => onSuggestionClick?.(s)}
                 className="rounded-xl border border-[#efe6df] bg-white px-3 py-2 text-left text-[13px] text-[var(--navy)] transition hover:bg-[#faf7f3]"
               >
                 {s}

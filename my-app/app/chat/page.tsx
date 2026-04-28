@@ -1,9 +1,43 @@
-import { messages } from "./messages";
+"use client";
+
+import { useMemo, useState } from "react";
+import { messages, Message } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import LanguageDropdown from "./LanguageDropdown";
 
 export default function ChatPage() {
+  const [thread, setThread] = useState<Message[]>(messages);
+  const [inputValue, setInputValue] = useState("");
+
+  const nextId = useMemo(
+    () => thread.reduce((maxId, message) => Math.max(maxId, message.id), 0) + 1,
+    [thread]
+  );
+
+  const sendMessage = () => {
+    const text = inputValue.trim();
+    if (!text) {
+      return;
+    }
+
+    const userMessage: Message = {
+      id: nextId,
+      role: "user",
+      text,
+    };
+
+    const aiReply: Message = {
+      id: nextId + 1,
+      role: "ai",
+      text: "Thanks for your question. I can help explain this section and point to the exact field in your form.",
+      citation: "Part 2, Line 3.a-3.c",
+    };
+
+    setThread((prev) => [...prev, userMessage, aiReply]);
+    setInputValue("");
+  };
+
   return (
     <main className="flex min-h-screen bg-[#F8F5F1]">
       <aside className="flex w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4">
@@ -66,11 +100,19 @@ export default function ChatPage() {
 
         <div className="flex min-h-0 flex-1 flex-col bg-[#F8F5F1]">
           <div className="flex-1 overflow-y-auto p-6">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
+            {thread.map((m) => (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                onSuggestionClick={(value) => setInputValue(value)}
+              />
             ))}
           </div>
-          <ChatInput />
+          <ChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={sendMessage}
+          />
         </div>
       </section>
 
