@@ -1,65 +1,197 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
+import LanguageDropdown, {
+  LanguageOption,
+  languages,
+} from "./chat/LanguageDropdown";
 
 export default function Home() {
+  const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
+    languages[0],
+  );
+  const isRtl = selectedLanguage.code === "ar";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main
+      dir={isRtl ? "rtl" : "ltr"}
+      className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8"
+    >
+      {/* Top right language button */}
+      <div className="flex justify-end">
+        <LanguageDropdown
+          selected={selectedLanguage}
+          onSelect={setSelectedLanguage}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      <section className="mx-auto flex max-w-4xl flex-col items-center pt-6 sm:pt-10">
+        {/* Logo */}
+        <div className="mb-6">
+          <Image
+            src="/formly_nobackground.png"
+            alt="formly.ai logo"
+            width={190}
+            height={150}
+            className="h-auto w-[160px] sm:w-[190px]"
+            priority
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Title */}
+        <h1 className="text-center text-3xl font-semibold text-[var(--navy)] sm:text-5xl">
+          Welcome to formly.ai
+        </h1>
+
+        {/* Subtitle */}
+        <p className="mt-4 text-center text-base leading-7 text-gray-500 sm:mt-6 sm:text-xl sm:leading-8">
+          Your trusted guide for understanding government documents.
+          <br />
+          Upload a form to get started.
+        </p>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm">
+          <span
+            className={`rounded-full px-3 py-1 font-semibold ${
+              step >= 1
+                ? "bg-[var(--coral)] text-white"
+                : "bg-white text-[var(--navy)]"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            1. Upload
+          </span>
+          <span className="h-px w-6 bg-[#d8ccc2]" />
+          <span
+            className={`rounded-full px-3 py-1 font-semibold ${
+              step >= 2
+                ? "bg-[var(--coral)] text-white"
+                : "bg-white text-[var(--navy)]"
+            }`}
           >
-            Documentation
-          </a>
+            2. Review extraction
+          </span>
+          <span className="h-px w-6 bg-[#d8ccc2]" />
+          <span className="rounded-full bg-white px-3 py-1 font-semibold text-[var(--navy)]">
+            3. Ask questions
+          </span>
         </div>
-      </main>
-    </div>
+
+        {/* Upload card */}
+        <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-sm sm:mt-14 sm:p-10">
+          {step === 1 ? (
+            <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
+              <h2 className="text-xl font-semibold text-[var(--navy)] sm:text-2xl">
+                Upload Your Document
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-md text-base leading-7 text-gray-500 sm:mt-4 sm:text-lg sm:leading-8">
+                Take a photo or upload a PDF of your government form. We accept
+                images and PDF files.
+              </p>
+
+              <div className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-medium text-gray-500 sm:mt-7">
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  PNG
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  JPG
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  PDF
+                </span>
+                <span className="rounded-full border border-[#e8ddd3] px-2.5 py-1">
+                  Photo
+                </span>
+              </div>
+
+              <div className="mt-5 flex justify-center">
+                <label
+                  htmlFor="document-upload"
+                  className="cursor-pointer rounded-xl border border-[#d9cdc2] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)] transition hover:border-[var(--coral)] hover:bg-[#fff5f2] active:scale-[0.99] focus-within:ring-2 focus-within:ring-[#f3c3b8]"
+                >
+                  Choose file
+                </label>
+                <input
+                  id="document-upload"
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    setSelectedFileName(file ? file.name : "");
+                  }}
+                />
+              </div>
+
+              {selectedFileName && (
+                <p className="mt-3 text-sm text-gray-600">{selectedFileName}</p>
+              )}
+
+              <div className="mt-8">
+                <button
+                  onClick={() => setStep(2)}
+                  disabled={!selectedFileName}
+                  className="inline-flex rounded-xl bg-[var(--coral)] px-5 py-3 text-sm font-medium text-white transition enabled:hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Upload and continue
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-[#E8D8D1] bg-[#fffaf8] p-4 sm:p-6">
+              <h2 className="text-xl font-semibold text-[var(--navy)]">
+                Review OCR extraction
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Confirm the extracted text before you start chat guidance.
+              </p>
+
+              <div className="mt-4 rounded-xl border border-[#efe6df] bg-white p-4 text-sm leading-6 text-gray-700">
+                Form I-765. Part 2, Question 3 requests your full legal name as
+                shown on your passport or birth certificate.
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={() => setStep(1)}
+                  className="rounded-xl border border-[#d9cdc2] px-4 py-2 text-sm font-semibold text-[var(--navy)]"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => router.push("/chat")}
+                  className="rounded-xl bg-[var(--coral)] px-4 py-2 text-sm font-semibold text-white"
+                >
+                  Confirm and ask questions
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Privacy section */}
+          <div className="mt-8 flex gap-4 rounded-3xl border border-[#F4D8D2] bg-[#FFF8F6] p-4 sm:gap-5 sm:p-6">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
+              <div className="h-3 w-3 rounded-sm border border-[var(--coral)]" />
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-[var(--navy)]">
+                Your Privacy Matters
+              </h3>
+
+              <p className="mt-2 leading-6 text-gray-500">
+                Your documents are encrypted and processed securely. We do not
+                store your information beyond your session.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   );
 }
