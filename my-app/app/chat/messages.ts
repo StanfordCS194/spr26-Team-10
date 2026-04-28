@@ -7,6 +7,11 @@ export type Message = {
   text: string;
   suggestions?: string[];
   citation?: string;
+  annotations?: {
+    tag: string;
+    title: string;
+    detail: string;
+  }[];
 };
 
 export const messages: Message[] = [
@@ -29,7 +34,19 @@ export const messages: Message[] = [
   {
     id: 3,
     role: "ai",
-    text: "In Part 2, Question 3, you'll need to provide your full legal name as it appears on your passport or birth certificate. This should match your supporting documents exactly.",
+    text: "In Part 2, Question 3, you'll need to provide your full legal name as it appears on your passport or birth certificate. This should match your supporting documents exactly. If you've changed your name, include documentation of the name change.",
+    annotations: [
+      {
+        tag: "Family Name",
+        title: "Last name exactly as on passport",
+        detail: "Must match official documents to avoid processing delays",
+      },
+      {
+        tag: "Given Name",
+        title: "First name from birth certificate",
+        detail: "Legal name required for background checks",
+      },
+    ],
     citation: "Part 2, Line 3.a–3.c",
   },
 ];
