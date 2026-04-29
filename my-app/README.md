@@ -1,5 +1,16 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Setup
+
+Copy the example env file and fill in your OpenAI key (used by the streaming chat at `/chat`):
+
+```bash
+cp .env.local.example .env.local
+# then edit .env.local and set OPENAI_API_KEY=sk-...
+```
+
+Get an API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+
 ## Getting Started
 
 First, run the development server:

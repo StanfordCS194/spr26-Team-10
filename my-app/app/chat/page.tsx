@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { messages, Message } from "./messages";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { seedMessages } from "./messages";
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
 import LanguageDropdown, {
@@ -71,7 +73,6 @@ const uiLabels: Record<
 };
 
 export default function ChatPage() {
-  const [thread, setThread] = useState<Message[]>(messages);
   const [inputValue, setInputValue] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
     languages[0],
@@ -79,31 +80,20 @@ export default function ChatPage() {
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
 
-  const nextId = useMemo(
-    () => thread.reduce((maxId, message) => Math.max(maxId, message.id), 0) + 1,
-    [thread],
-  );
+  const { messages, sendMessage, status, error, regenerate } = useChat({
+    messages: seedMessages,
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
 
-  const sendMessage = () => {
+  const isBusy = status === "submitted" || status === "streaming";
+
+  const handleSend = () => {
     const text = inputValue.trim();
-    if (!text) {
-      return;
-    }
-
-    const userMessage: Message = {
-      id: nextId,
-      role: "user",
-      text,
-    };
-
-    const aiReply: Message = {
-      id: nextId + 1,
-      role: "ai",
-      text: "Thanks for your question. I can help explain this section and point to the exact field in your form.",
-      citation: "Part 2, Line 3.a-3.c",
-    };
-
-    setThread((prev) => [...prev, userMessage, aiReply]);
+    if (!text || isBusy) return;
+    sendMessage(
+      { text },
+      { body: { language: selectedLanguage.code } },
+    );
     setInputValue("");
   };
 
@@ -218,19 +208,56 @@ export default function ChatPage() {
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col bg-[#F8F5F1]">
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            {thread.map((m) => (
+          <div
+            className="flex-1 overflow-y-auto p-4 sm:p-6"
+            aria-busy={isBusy}
+            aria-live="polite"
+          >
+            {messages.map((m) => (
               <MessageBubble
                 key={m.id}
                 message={m}
                 onSuggestionClick={(value) => setInputValue(value)}
               />
             ))}
+
+            {status === "submitted" && (
+              <div className="mb-3 flex gap-3" aria-label="Assistant is typing">
+                <div className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--coral)]" />
+                <div className="rounded-2xl border border-[#efe6df] bg-white px-4 py-3 text-sm text-gray-400 shadow-sm">
+                  <span className="inline-flex gap-1">
+                    <span className="animate-pulse">.</span>
+                    <span className="animate-pulse [animation-delay:150ms]">
+                      .
+                    </span>
+                    <span className="animate-pulse [animation-delay:300ms]">
+                      .
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mb-3 flex flex-col items-start gap-2">
+                <div className="rounded-2xl border border-[#f6d4cb] bg-[#fff5f2] px-4 py-3 text-sm text-[var(--coral)] shadow-sm">
+                  Something went wrong. Please try again.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => regenerate()}
+                  className="rounded-full border border-[#f6d4cb] bg-white px-3 py-1 text-xs font-medium text-[var(--coral)] transition hover:bg-[#fff5f2]"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
           <ChatInput
             value={inputValue}
             onChange={setInputValue}
-            onSend={sendMessage}
+            onSend={handleSend}
+            isLoading={isBusy}
           />
         </div>
       </section>
