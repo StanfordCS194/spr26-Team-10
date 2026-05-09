@@ -13,6 +13,19 @@ function inferFormMetadata(fileName: string) {
     };
   }
 
+  if (
+    normalized.includes("1040") ||
+    normalized.includes("tax return") ||
+    normalized.includes("irs")
+  ) {
+    return {
+      formType: "Form 1040 series (IRS)",
+      formDescription: "U.S. individual income tax",
+      ocrPreview:
+        "This upload appears to be a Form 1040–family tax document. The assistant can help interpret line items and schedules once real OCR is wired; for now use the filename and your questions.",
+    };
+  }
+
   return {
     formType: "Government Form",
     formDescription: "General Document",
