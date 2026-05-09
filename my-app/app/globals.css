@@ -1,4 +1,5 @@
-@import "tailwindcss";
+/* Relative path so PostCSS resolves from this app, not the repo-root package.json (no tailwind there). */
+@import "../node_modules/tailwindcss/index.css";
 
 :root {
   --background: #ede7f6;
