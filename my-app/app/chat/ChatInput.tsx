@@ -7,6 +7,11 @@ type ChatInputProps = {
   onChange?: (value: string) => void;
   onSend?: () => void;
   isLoading?: boolean;
+  /** When true, blocks send and disables the field (e.g. missing document context). */
+  disabled?: boolean;
+  placeholder?: string;
+  waitingPlaceholder?: string;
+  footerHint?: string;
 };
 
 export default function ChatInput({
@@ -14,6 +19,10 @@ export default function ChatInput({
   onChange,
   onSend,
   isLoading = false,
+  disabled = false,
+  placeholder = "Ask a question about your form...",
+  waitingPlaceholder = "Waiting for response...",
+  footerHint = "Responses are grounded in your document. Always verify important details.",
 }: ChatInputProps) {
   const [localValue, setLocalValue] = useState("");
   const resolvedValue = value ?? localValue;
@@ -21,16 +30,15 @@ export default function ChatInput({
   const resolvedOnSend = onSend ?? (() => {});
 
   const trimmedEmpty = resolvedValue.trim().length === 0;
-  const sendDisabled = isLoading || trimmedEmpty;
+  const sendDisabled = isLoading || trimmedEmpty || disabled;
+  const inputDisabled = isLoading || disabled;
 
   return (
     <div className="border-t border-[#efe6df] bg-white px-6 py-4">
       <div className="flex items-center gap-3">
         <input
           type="text"
-          placeholder={
-            isLoading ? "Waiting for response..." : "Ask a question about your form..."
-          }
+          placeholder={isLoading ? waitingPlaceholder : placeholder}
           value={resolvedValue}
           onChange={(e) => resolvedOnChange(e.target.value)}
           onKeyDown={(e) => {
@@ -39,7 +47,7 @@ export default function ChatInput({
               if (!sendDisabled) resolvedOnSend();
             }
           }}
-          disabled={isLoading}
+          disabled={inputDisabled}
           aria-busy={isLoading}
           className="flex-1 rounded-2xl border border-[#efe6df] bg-[#f8f5f1] px-4 py-3 text-sm text-[var(--navy)] outline-none transition focus:border-[#d6c8bd] disabled:cursor-not-allowed disabled:opacity-60"
         />
@@ -52,10 +60,7 @@ export default function ChatInput({
           {isLoading ? "..." : "Send"}
         </button>
       </div>
-      <p className="mt-2 text-center text-xs text-gray-500">
-        Responses are grounded in your document. Always verify important
-        details.
-      </p>
+      <p className="mt-2 text-center text-xs text-gray-500">{footerHint}</p>
     </div>
   );
 }

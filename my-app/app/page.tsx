@@ -11,18 +11,60 @@ import LanguageDropdown, {
 export default function Home() {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [ocrPreview, setOcrPreview] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
     languages[0],
   );
   const isRtl = selectedLanguage.code === "ar";
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploadError("");
+    setIsUploading(true);
+
+    try {
+      const payload = new FormData();
+      payload.append("file", selectedFile);
+      payload.append("language", selectedLanguage.code);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: payload,
+      });
+
+      const data = (await response.json()) as {
+        documentId?: string;
+        ocrPreview?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.documentId) {
+        throw new Error(data.error ?? "Upload failed");
+      }
+
+      setDocumentId(data.documentId);
+      setOcrPreview(data.ocrPreview ?? "");
+      setStep(2);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Could not upload document",
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <main
       dir={isRtl ? "rtl" : "ltr"}
       className="min-h-screen bg-[var(--cream)] px-4 py-4 sm:px-6 sm:py-6 md:px-8"
     >
-      {/* Top right language button */}
       <div className="flex justify-end">
         <LanguageDropdown
           selected={selectedLanguage}
@@ -31,7 +73,6 @@ export default function Home() {
       </div>
 
       <section className="mx-auto flex max-w-4xl flex-col items-center pt-6 sm:pt-10">
-        {/* Logo */}
         <div className="mb-6">
           <Image
             src="/formly_nobackground.png"
@@ -43,12 +84,10 @@ export default function Home() {
           />
         </div>
 
-        {/* Title */}
         <h1 className="text-center text-3xl font-semibold text-[var(--navy)] sm:text-5xl">
           Welcome to formly.ai
         </h1>
 
-        {/* Subtitle */}
         <p className="mt-4 text-center text-base leading-7 text-gray-500 sm:mt-6 sm:text-xl sm:leading-8">
           Your trusted guide for understanding government documents.
           <br />
@@ -81,7 +120,6 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Upload card */}
         <div className="mt-8 w-full max-w-2xl rounded-3xl bg-white p-4 shadow-sm sm:mt-14 sm:p-10">
           {step === 1 ? (
             <div className="rounded-3xl border-2 border-dashed border-[#E8D8D1] px-4 py-10 text-center sm:px-10 sm:py-16">
@@ -123,7 +161,9 @@ export default function Home() {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
+                    setSelectedFile(file ?? null);
                     setSelectedFileName(file ? file.name : "");
+                    setUploadError("");
                   }}
                 />
               </div>
@@ -132,13 +172,17 @@ export default function Home() {
                 <p className="mt-3 text-sm text-gray-600">{selectedFileName}</p>
               )}
 
+              {uploadError && (
+                <p className="mt-3 text-sm text-red-600">{uploadError}</p>
+              )}
+
               <div className="mt-8">
                 <button
-                  onClick={() => setStep(2)}
-                  disabled={!selectedFileName}
+                  onClick={handleUpload}
+                  disabled={!selectedFileName || isUploading}
                   className="inline-flex rounded-xl bg-[var(--coral)] px-5 py-3 text-sm font-medium text-white transition enabled:hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  Upload and continue
+                  {isUploading ? "Uploading..." : "Upload and continue"}
                 </button>
               </div>
             </div>
@@ -152,8 +196,8 @@ export default function Home() {
               </p>
 
               <div className="mt-4 rounded-xl border border-[#efe6df] bg-white p-4 text-sm leading-6 text-gray-700">
-                Form I-765. Part 2, Question 3 requests your full legal name as
-                shown on your passport or birth certificate.
+                {ocrPreview ||
+                  "We could not show a preview. You can still continue to chat."}
               </div>
 
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -164,7 +208,11 @@ export default function Home() {
                   Back
                 </button>
                 <button
-                  onClick={() => router.push("/chat")}
+                  onClick={() =>
+                    router.push(
+                      `/chat?documentId=${encodeURIComponent(documentId ?? "")}&language=${selectedLanguage.code}`,
+                    )
+                  }
                   className="rounded-xl bg-[var(--coral)] px-4 py-2 text-sm font-semibold text-white"
                 >
                   Confirm and ask questions
@@ -173,7 +221,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Privacy section */}
           <div className="mt-8 flex gap-4 rounded-3xl border border-[#F4D8D2] bg-[#FFF8F6] p-4 sm:gap-5 sm:p-6">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
               <div className="h-3 w-3 rounded-sm border border-[var(--coral)]" />
