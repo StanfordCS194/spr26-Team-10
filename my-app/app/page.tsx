@@ -42,10 +42,15 @@ export default function Home() {
         documentId?: string;
         ocrPreview?: string;
         error?: string;
+        details?: string;
+        hint?: string;
       };
 
       if (!response.ok || !data.documentId) {
-        throw new Error(data.error ?? "Upload failed");
+        const message = [data.error, data.details, data.hint]
+          .filter(Boolean)
+          .join(" — ");
+        throw new Error(message || "Upload failed");
       }
 
       setDocumentId(data.documentId);

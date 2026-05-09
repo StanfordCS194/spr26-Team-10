@@ -1,11 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
+import { createServerSupabase } from "@/lib/supabase-server";
 
 export async function GET(
   _req: Request,
@@ -17,7 +10,7 @@ export async function GET(
       return Response.json({ error: "Missing document id" }, { status: 400 });
     }
 
-    const supabase = getSupabase();
+    const supabase = createServerSupabase();
 
     const [{ data: document, error: documentError }, { data: actionItems, error: actionItemsError }] =
       await Promise.all([

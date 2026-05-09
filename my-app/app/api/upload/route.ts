@@ -1,13 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabase } from "@/lib/supabase-server";
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
-
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 function inferFormMetadata(fileName: string) {
   const normalized = fileName.toLowerCase();
@@ -39,7 +32,7 @@ export async function POST(req: Request) {
     }
 
     const { formType, formDescription, ocrPreview } = inferFormMetadata(file.name);
-    const supabase = getSupabase();
+    const supabase = createServerSupabase();
 
     const { data: createdDoc, error: docError } = await supabase
       .from("documents")
@@ -54,7 +47,12 @@ export async function POST(req: Request) {
 
     if (docError || !createdDoc) {
       return Response.json(
-        { error: "Failed to save uploaded document metadata" },
+        {
+          error: "Failed to save uploaded document metadata",
+          details: docError?.message,
+          hint:
+            "Add SUPABASE_SERVICE_ROLE_KEY to my-app/.env.local (server only), or run sql/04_rls_policies_anon.sql in Supabase.",
+        },
         { status: 500 },
       );
     }

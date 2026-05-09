@@ -1,6 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createClient } from "@supabase/supabase-js";
+import { createServerSupabase } from "@/lib/supabase-server";
 
 export const runtime = "edge";
 export const maxDuration = 30;
@@ -16,10 +16,7 @@ const LANGUAGE_NAMES: Record<LanguageCode, string> = {
 };
 
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  return createServerSupabase();
 }
 
 // Pull the top relevant sections from form_reference using full-text search
