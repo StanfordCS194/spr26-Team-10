@@ -100,7 +100,7 @@ export default function ChatPage() {
   return (
     <main
       dir={isRtl ? "rtl" : "ltr"}
-      className="flex min-h-screen flex-col bg-[#F8F5F1] md:flex-row"
+      className="flex min-h-screen flex-col bg-[var(--cream)] md:flex-row"
     >
       <aside className="hidden w-[280px] shrink-0 flex-col border-r border-[#efe6df] bg-white p-4 md:flex">
         <div className="mb-6">
@@ -207,7 +207,7 @@ export default function ChatPage() {
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col bg-[#F8F5F1]">
+        <div className="flex min-h-0 flex-1 flex-col bg-[var(--cream)]">
           <div
             className="flex-1 overflow-y-auto p-4 sm:p-6"
             aria-busy={isBusy}
