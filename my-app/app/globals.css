@@ -1,5 +1,5 @@
-/* Relative path so PostCSS resolves from this app, not the repo-root package.json (no tailwind there). */
-@import "../node_modules/tailwindcss/index.css";
+/* Next/Turbopack resolves this import from the monorepo root; tailwind is listed in the root package.json. */
+@import "tailwindcss";
 
 :root {
   --background: #ede7f6;

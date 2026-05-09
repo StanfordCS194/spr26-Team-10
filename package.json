@@ -18,5 +18,9 @@
   "homepage": "https://github.com/StanfordCS194/spr26-Team-10#readme",
   "dependencies": {
     "playwright": "^1.59.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
   }
 }
