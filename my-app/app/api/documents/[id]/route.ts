@@ -16,7 +16,7 @@ export async function GET(
       await Promise.all([
         supabase
           .from("documents")
-          .select("id, file_name, form_type, form_description")
+          .select("id, file_name, form_type, form_description, ai_extraction, ocr_text")
           .eq("id", id)
           .single(),
         supabase
@@ -37,12 +37,23 @@ export async function GET(
       );
     }
 
+    const extraction = document.ai_extraction as
+      | { fields?: unknown[] }
+      | null
+      | undefined;
+    const reviewFields = Array.isArray(extraction?.fields)
+      ? extraction!.fields
+      : [];
+
     return Response.json({
       document: {
         id: document.id,
         fileName: document.file_name,
         formType: document.form_type,
         formDescription: document.form_description,
+        reviewFields,
+        ocrPreview:
+          typeof document.ocr_text === "string" ? document.ocr_text : "",
       },
       actionItems: (actionItems ?? []).map((item) => ({
         id: item.id,

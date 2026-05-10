@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import "@/styles/dazl/theme.css";
+import "@/styles/dazl/dazl-root.css";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500"],
 });
 
 export const metadata: Metadata = {
-  title: "formly.ai",
-  description: "AI guide for understanding government forms",
+  title: "DAZL",
+  description:
+    "Upload any government form and get clear, plain language guidance in your language.",
 };
 
 export default function RootLayout({
@@ -19,8 +22,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${inter.variable} h-full`}>
+      <body className="min-h-full flex flex-col bg-background antialiased">
+        {children}
+      </body>
     </html>
   );
 }

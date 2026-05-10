@@ -26,7 +26,7 @@ async function fetchDocumentContext(documentId: string): Promise<string> {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("documents")
-    .select("file_name, form_type, form_description, ocr_text")
+    .select("file_name, form_type, form_description, ocr_text, ai_extraction")
     .eq("id", documentId)
     .single();
 
@@ -37,6 +37,20 @@ async function fetchDocumentContext(documentId: string): Promise<string> {
   if (data.form_type) lines.push(`Inferred form type: ${data.form_type}`);
   if (data.form_description) {
     lines.push(`Inferred description: ${data.form_description}`);
+  }
+
+  const extraction = data.ai_extraction as
+    | {
+        fields?: { label: string; value: string; key?: string }[];
+        generatedAt?: string;
+      }
+    | null
+    | undefined;
+  if (extraction?.fields?.length) {
+    lines.push("User-confirmed AI extraction summary (from review step):");
+    for (const row of extraction.fields) {
+      lines.push(`- ${row.label}: ${row.value}`);
+    }
   }
 
   const raw = (data.ocr_text ?? "").trim();

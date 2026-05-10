@@ -1,0 +1,68 @@
+/* ─── Formly.ai Design Tokens ─────────────────────────────────────────── */
+
+:root {
+  /* Brand */
+  --color-brand: #0071e3;
+  --color-brand-light: #e8f0fb;
+
+  /* Text */
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #6e6e73;
+  --color-text-tertiary: #aeaeb2;
+
+  /* Backgrounds */
+  --color-bg-page: #ffffff;
+  --color-bg-panel: #f5f5f7;
+
+  /* Borders */
+  --color-border-primary: #d2d2d7;
+  --color-border-light: #e5e5ea;
+
+  /* ── Aliases used by error-boundary / legacy vars ── */
+  --color-text: var(--color-text-primary);
+  --color-background: var(--color-bg-page);
+  --color-background-secondary: var(--color-bg-panel);
+  --color-border-secondary: var(--color-border-primary);
+  --color-border-tertiary: var(--color-border-light);
+
+  /* Typography */
+  --family-display: -apple-system, "SF Pro Display", "Helvetica Neue", sans-serif;
+  --family-body: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+
+  /* Font sizes */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+  --text-3xl: 44px;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+
+  /* Border radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* Legacy aliases expected by some components */
+  --border-radius-lg: var(--radius-xl);
+}
