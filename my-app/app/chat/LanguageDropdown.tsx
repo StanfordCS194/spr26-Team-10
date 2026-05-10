@@ -1,5 +1,5 @@
-// Language selector dropdown in the sidebar header.
-// Currently updates UI label only — translation wired in Milestone 2.
+// Language selector: updates UI direction (RTL for Arabic), localized chrome labels on the chat page,
+// and sends the selected locale to /api/chat and /api/upload.
 
 "use client";
 

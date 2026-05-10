@@ -1,3 +1,4 @@
+/* Next/Turbopack resolves this import from the monorepo root; tailwind is listed in the root package.json. */
 @import "tailwindcss";
 
 :root {
