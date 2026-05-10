@@ -22,7 +22,7 @@ export function AppNav({
     <nav className={styles.nav}>
       <div className={styles.navLeft}>
         <Link href="/" className={styles.logo}>
-          DAZL
+          formly<span className={styles.logoAccent}>.ai</span>
         </Link>
         {!landing && backLabel ? (
           <Link href={backTo} className={styles.backLink}>

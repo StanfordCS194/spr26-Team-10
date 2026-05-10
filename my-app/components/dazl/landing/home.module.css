@@ -69,6 +69,12 @@
   margin-bottom: 40px;
 }
 
+.heroBrand {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
 .heroActions {
   display: flex;
   flex-direction: column;

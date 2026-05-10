@@ -114,8 +114,11 @@ export function DazlLandingClient() {
               <em className={styles.heroAccent}>this hard.</em>
             </h1>
             <p className={styles.heroBody}>
-              DAZL reads your government forms for you and answers your questions
-              in plain language,
+              <span className={styles.heroBrand}>
+                formly<span className={styles.logoAccent}>.ai</span>
+              </span>{" "}
+              reads your government forms for you and answers your questions in
+              plain language,
               <br />
               in your language. No jargon. No confusion. No stress.
             </p>
@@ -222,7 +225,11 @@ export function DazlLandingClient() {
             </h2>
             <p className={styles.langSubtitle}>
               Ask your questions in the language you&apos;re most comfortable
-              with. DAZL responds in your language. No translation needed.
+              with.{" "}
+              <span className={styles.heroBrand}>
+                formly<span className={styles.logoAccent}>.ai</span>
+              </span>{" "}
+              responds in your language. No translation needed.
             </p>
           </div>
           <div className={styles.langList}>
@@ -259,8 +266,12 @@ export function DazlLandingClient() {
       </div>
 
       <footer id="privacy" className={styles.footer}>
-        <div className={styles.footerLogo}>DAZL</div>
-        <div className={styles.footerCopy}>© 2026 DAZL · Privacy · Terms</div>
+        <div className={styles.footerLogo}>
+          formly<span className={styles.logoAccent}>.ai</span>
+        </div>
+        <div className={styles.footerCopy}>
+          © 2026 formly.ai · Privacy · Terms
+        </div>
       </footer>
     </div>
   );

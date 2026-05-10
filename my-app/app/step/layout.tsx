@@ -3,7 +3,7 @@ import "@/styles/dazl/theme.css";
 import "@/styles/dazl/dazl-root.css";
 
 export const metadata: Metadata = {
-  title: "DAZL",
+  title: "formly.ai",
   description:
     "Upload any government form and get clear, plain language guidance in your language.",
 };

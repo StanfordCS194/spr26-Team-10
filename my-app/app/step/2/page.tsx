@@ -130,10 +130,12 @@ function ReviewStepInner() {
             ocrPreview?: string;
           };
           error?: string;
+          details?: string;
         };
 
         if (!response.ok || !data.document) {
-          throw new Error(data.error ?? "Could not load document");
+          const message = [data.error, data.details].filter(Boolean).join(": ");
+          throw new Error(message || "Could not load document");
         }
 
         if (cancelled) return;
