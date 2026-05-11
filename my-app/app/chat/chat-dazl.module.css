@@ -430,6 +430,22 @@
   padding: 0;
 }
 
+/* Outer .inputBox already shows focus (border); disable global :focus-visible ring on textarea */
+.textarea:focus,
+.textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.textarea::-webkit-scrollbar-thumb {
+  background: var(--color-border-primary);
+  border-radius: 3px;
+}
+
 .textarea::placeholder {
   color: var(--color-text-tertiary);
 }

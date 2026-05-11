@@ -6,10 +6,7 @@ import { AppNav } from "@/components/dazl/app-nav/app-nav";
 import { StepSidebar, type Step } from "@/components/dazl/step-sidebar/step-sidebar";
 import { UploadCard } from "@/components/dazl/upload-card/upload-card";
 import { PageSplit } from "@/components/dazl/page-split/page-split";
-import LanguageDropdown, {
-  type LanguageOption,
-  languages,
-} from "@/app/chat/LanguageDropdown";
+import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "../upload.module.css";
 
 function UploadStepInner() {
@@ -17,13 +14,10 @@ function UploadStepInner() {
   const searchParams = useSearchParams();
   const languageFromUrl = searchParams.get("language");
 
-  const initialLanguage = useMemo(() => {
-    if (!languageFromUrl) return languages[0];
-    return languages.find((l) => l.code === languageFromUrl) ?? languages[0];
-  }, [languageFromUrl]);
-
-  const [selectedLanguage, setSelectedLanguage] =
-    useState<LanguageOption>(initialLanguage);
+  const selectedLanguage = useMemo(
+    () => resolveLanguageForStep(languageFromUrl),
+    [languageFromUrl],
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const isRtl = selectedLanguage.code === "ar";
@@ -89,17 +83,7 @@ function UploadStepInner() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
-      <AppNav
-        backLabel="Back to home"
-        backTo="/"
-        rightSlot={
-          <LanguageDropdown
-            variant="nav"
-            selected={selectedLanguage}
-            onSelect={setSelectedLanguage}
-          />
-        }
-      />
+      <AppNav backLabel="Back to home" backTo="/" />
       <PageSplit
         left={
           <StepSidebar

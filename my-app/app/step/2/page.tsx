@@ -21,12 +21,10 @@ import {
 import { AppNav } from "@/components/dazl/app-nav/app-nav";
 import { StepSidebar, type Step } from "@/components/dazl/step-sidebar/step-sidebar";
 import { PageSplit } from "@/components/dazl/page-split/page-split";
-import LanguageDropdown, {
-  type LanguageOption,
-  languages,
-} from "@/app/chat/LanguageDropdown";
+import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import type { ReviewField, ReviewFieldIcon } from "@/types/review-field";
 import { reviewLabels } from "@/lib/review-labels";
+import { resolveLanguageForStep } from "@/lib/language-preference";
 import reviewStyles from "../review-step.module.css";
 
 const EXTRACTION_KEY = "extraction";
@@ -90,10 +88,11 @@ function ReviewStepInner() {
   const documentId = searchParams.get("documentId");
   const languageFromUrl = searchParams.get("language");
 
-  const selectedLanguage = useMemo((): LanguageOption => {
-    if (!languageFromUrl) return languages[0];
-    return languages.find((l) => l.code === languageFromUrl) ?? languages[0];
-  }, [languageFromUrl]);
+  const selectedLanguage = useMemo(
+    (): LanguageOption =>
+      resolveLanguageForStep(languageFromUrl),
+    [languageFromUrl],
+  );
 
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -213,27 +212,10 @@ function ReviewStepInner() {
 
   const allRowsConfirmed = rowsForUi.every((row) => !!confirmed[row.key]);
 
-  const handleLanguageSelect = (lang: LanguageOption) => {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("language", lang.code);
-    if (documentId) next.set("documentId", documentId);
-    router.replace(`/step/2?${next.toString()}`, { scroll: false });
-  };
-
   if (loadState === "loading" || !documentId) {
     return (
       <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-        <AppNav
-          backLabel="Back to home"
-          backTo="/"
-          rightSlot={
-            <LanguageDropdown
-              variant="nav"
-              selected={selectedLanguage}
-              onSelect={handleLanguageSelect}
-            />
-          }
-        />
+        <AppNav backLabel="Back to home" backTo="/" />
         <PageSplit
           left={
             <StepSidebar
@@ -260,17 +242,7 @@ function ReviewStepInner() {
   if (loadState === "error") {
     return (
       <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-        <AppNav
-          backLabel="Back to home"
-          backTo="/"
-          rightSlot={
-            <LanguageDropdown
-              variant="nav"
-              selected={selectedLanguage}
-              onSelect={handleLanguageSelect}
-            />
-          }
-        />
+        <AppNav backLabel="Back to home" backTo="/" />
         <PageSplit
           left={
             <StepSidebar
@@ -309,17 +281,7 @@ function ReviewStepInner() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-      <AppNav
-        backLabel="Back to home"
-        backTo="/"
-        rightSlot={
-          <LanguageDropdown
-            variant="nav"
-            selected={selectedLanguage}
-            onSelect={handleLanguageSelect}
-          />
-        }
-      />
+      <AppNav backLabel="Back to home" backTo="/" />
       <PageSplit
         left={
           <StepSidebar

@@ -6,14 +6,17 @@ import styles from "./app-nav.module.css";
 interface AppNavProps {
   /** Show nav links + CTA (landing page mode). Default: false */
   landing?: boolean;
+  /** Landing top-right slot (e.g. language selector). Replaces the old “Get started” button. */
+  landingRight?: ReactNode;
   backLabel?: string;
   backTo?: string;
-  /** When not landing: replaces static language control (e.g. LanguageDropdown). */
+  /** When not landing: optional right-side slot (kept for future use). */
   rightSlot?: ReactNode;
 }
 
 export function AppNav({
   landing = false,
+  landingRight,
   backLabel,
   backTo = "/",
   rightSlot,
@@ -42,9 +45,9 @@ export function AppNav({
           <a href="#privacy" className={styles.navLink}>
             Privacy
           </a>
-          <Link href="/step/1" className={styles.navCta}>
-            Get started
-          </Link>
+          {landingRight ? (
+            <div className={styles.navLandingRight}>{landingRight}</div>
+          ) : null}
         </div>
       ) : (
         <div className={styles.navRightSlot}>{rightSlot}</div>

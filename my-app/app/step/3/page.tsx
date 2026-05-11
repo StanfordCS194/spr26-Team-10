@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
@@ -21,10 +21,8 @@ import {
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/dazl/app-nav/app-nav";
 import MessageBubble from "@/app/chat/MessageBubble";
-import LanguageDropdown, {
-  languages,
-  LanguageOption,
-} from "@/app/chat/LanguageDropdown";
+import type { LanguageOption } from "@/app/chat/LanguageDropdown";
+import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "@/app/chat/chat-dazl.module.css";
 
 type SidebarActionItem = {
@@ -251,15 +249,13 @@ function SidebarDocSkeleton() {
 }
 
 function ChatPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId") ?? undefined;
 
-  const languageFromUrl = searchParams.get("language");
   const selectedLanguage = useMemo(
-    () =>
-      languages.find((l) => l.code === languageFromUrl) ?? languages[0],
-    [languageFromUrl],
+    (): LanguageOption =>
+      resolveLanguageForStep(searchParams.get("language")),
+    [searchParams],
   );
 
   const [inputValue, setInputValue] = useState("");
@@ -277,13 +273,6 @@ function ChatPageContent() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const handleLanguageSelect = (lang: LanguageOption) => {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("language", lang.code);
-    if (documentId) next.set("documentId", documentId);
-    router.replace(`/step/3?${next.toString()}`, { scroll: false });
-  };
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
     messages: [],
@@ -386,17 +375,7 @@ function ChatPageContent() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
-      <AppNav
-        backLabel="Back to home"
-        backTo="/"
-        rightSlot={
-          <LanguageDropdown
-            variant="nav"
-            selected={selectedLanguage}
-            onSelect={handleLanguageSelect}
-          />
-        }
-      />
+      <AppNav backLabel="Back to home" backTo="/" />
 
       <div className={styles.body}>
         <aside className={styles.sidebar}>
@@ -422,7 +401,7 @@ function ChatPageContent() {
             </div>
             {!documentId ? (
               <Link
-                href="/step/1"
+                href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`}
                 className={styles.uploadNewBtn}
                 style={{ marginTop: "var(--space-3)" }}
               >
@@ -484,7 +463,7 @@ function ChatPageContent() {
           ) : null}
 
           <div className={styles.sidebarFooter}>
-            <Link href="/step/1" className={styles.uploadNewBtn}>
+            <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.uploadNewBtn}>
               <IconUpload size={13} aria-hidden />
               {labels.uploadNewDocument}
             </Link>
@@ -516,7 +495,7 @@ function ChatPageContent() {
                 </div>
                 <h2 className={styles.emptyHeading}>{labels.noDocumentTitle}</h2>
                 <p className={styles.emptyText}>{labels.noDocumentBody}</p>
-                <Link href="/step/1" className={styles.suggestionBtn}>
+                <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.suggestionBtn}>
                   {labels.goUpload}
                   <IconChevronRight size={12} aria-hidden />
                 </Link>

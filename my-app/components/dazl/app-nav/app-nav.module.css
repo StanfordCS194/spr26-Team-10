@@ -80,6 +80,11 @@
   opacity: 0.88;
 }
 
+.navLandingRight {
+  display: flex;
+  align-items: center;
+}
+
 .navRightSlot {
   display: flex;
   align-items: center;

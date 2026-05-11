@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppNav } from "@/components/dazl/app-nav/app-nav";
+import LanguageDropdown, {
+  languages,
+  type LanguageOption,
+} from "@/app/chat/LanguageDropdown";
+import {
+  getStoredLanguageCode,
+  setPreferredLanguage,
+} from "@/lib/language-preference";
 import {
   IconArrowRight,
   IconPlayerPlay,
@@ -20,7 +28,7 @@ import styles from "./home.module.css";
 
 const STATS = [
   { num: "47k+", label: "Forms understood by real people", blue: false },
-  { num: "20+", label: "Languages supported", blue: true },
+  { num: "5", label: "Languages supported", blue: true },
   { num: "4.9/5", label: "Average user satisfaction", blue: false },
   { num: "0", label: "Documents stored after your session ends", blue: false },
 ];
@@ -67,35 +75,43 @@ const VALUES = [
   {
     icon: IconWorld,
     title: "Your language, always",
-    desc: "We answer in your language, not the form's language. 20+ languages supported, with more added every month.",
+    desc: "We answer in your language, not the form's language. Five languages supported today, with more planned.",
   },
 ];
 
-const LANGUAGES = [
-  "English",
-  "Español",
-  "中文",
-  "한국어",
-  "Français",
-  "Deutsch",
-  "Português",
-  "हिन्दी",
-  "العربية",
-  "Русский",
-  "日本語",
-  "Tiếng Việt",
-  "ภาษาไทย",
-  "Filipino",
-  "Bahasa",
-  "+ more",
-];
+function stepHref(path: string, lang: LanguageOption) {
+  return `${path}?language=${encodeURIComponent(lang.code)}`;
+}
 
 export function DazlLandingClient() {
-  const [activeLang, setActiveLang] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
+    languages[0],
+  );
+
+  useEffect(() => {
+    const code = getStoredLanguageCode();
+    if (!code) return;
+    const opt = languages.find((l) => l.code === code);
+    if (opt) setSelectedLanguage(opt);
+  }, []);
+
+  const handleLanguageChange = (lang: LanguageOption) => {
+    setSelectedLanguage(lang);
+    setPreferredLanguage(lang.code);
+  };
 
   return (
     <div className={styles.page}>
-      <AppNav landing />
+      <AppNav
+        landing
+        landingRight={
+          <LanguageDropdown
+            variant="nav"
+            selected={selectedLanguage}
+            onSelect={handleLanguageChange}
+          />
+        }
+      />
 
       <div className={styles.heroWrap}>
         <section className={styles.hero}>
@@ -124,7 +140,10 @@ export function DazlLandingClient() {
             </p>
             <div className={styles.heroActions}>
               <div className={styles.heroActionButtons}>
-                <Link href="/step/1" className={styles.btnHero}>
+                <Link
+                  href={stepHref("/step/1", selectedLanguage)}
+                  className={styles.btnHero}
+                >
                   Get started free
                   <IconArrowRight size={14} aria-hidden />
                 </Link>
@@ -145,13 +164,11 @@ export function DazlLandingClient() {
                 <div className={styles.statLabel}>{s.label}</div>
                 {s.blue ? (
                   <div className={styles.langChips}>
-                    {["English", "Español", "中文", "한국어", "Français", "+15"].map(
-                      (l) => (
-                        <span key={l} className={styles.langChip}>
-                          {l}
-                        </span>
-                      ),
-                    )}
+                    {languages.map((l) => (
+                      <span key={l.code} className={styles.langChip}>
+                        {l.label}
+                      </span>
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -233,15 +250,15 @@ export function DazlLandingClient() {
             </p>
           </div>
           <div className={styles.langList}>
-            {LANGUAGES.map((l) => (
+            {languages.map((lang) => (
               <button
-                key={l}
+                key={lang.code}
                 type="button"
-                className={`${styles.langBadge} ${activeLang === l ? styles.langBadgeActive : ""}`}
-                onClick={() => setActiveLang(activeLang === l ? null : l)}
-                aria-pressed={activeLang === l}
+                className={`${styles.langBadge} ${selectedLanguage.code === lang.code ? styles.langBadgeActive : ""}`}
+                onClick={() => handleLanguageChange(lang)}
+                aria-pressed={selectedLanguage.code === lang.code}
               >
-                {l}
+                {lang.label}
               </button>
             ))}
           </div>
@@ -258,7 +275,10 @@ export function DazlLandingClient() {
           <p className={styles.ctaSub}>
             Free. Private. Takes 30 seconds to sign up. Just upload and ask.
           </p>
-          <Link href="/step/1" className={styles.btnCtaLarge}>
+          <Link
+            href={stepHref("/step/1", selectedLanguage)}
+            className={styles.btnCtaLarge}
+          >
             Upload your form
             <IconArrowRight size={16} aria-hidden />
           </Link>
