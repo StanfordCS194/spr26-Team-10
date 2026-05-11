@@ -1,4 +1,12 @@
 import { createServerSupabase } from "@/lib/supabase-server";
+import {
+  extractReviewFieldsFromUploadContext,
+  type ReviewField,
+  type AiExtractionPayload,
+} from "@/lib/review-extraction";
+import { extractUploadText } from "@/lib/extract-upload-text";
+
+export const runtime = "nodejs";
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
 
@@ -22,7 +30,7 @@ function inferFormMetadata(fileName: string) {
       formType: "Form 1040 series (IRS)",
       formDescription: "U.S. individual income tax",
       ocrPreview:
-        "This upload appears to be a Form 1040–family tax document. The assistant can help interpret line items and schedules once real OCR is wired; for now use the filename and your questions.",
+        "This upload appears to be a Form 1040 family tax document. The assistant can help interpret line items and schedules once real OCR is wired; for now use the filename and your questions.",
     };
   }
 
@@ -32,6 +40,20 @@ function inferFormMetadata(fileName: string) {
     ocrPreview:
       "We extracted text from your upload. Ask follow-up questions in chat for field-by-field guidance.",
   };
+}
+
+function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
+  const seen = new Set<string>();
+  return fields.map((f) => {
+    let key = f.key;
+    let n = 2;
+    while (seen.has(key)) {
+      key = `${f.key}_${n}`;
+      n += 1;
+    }
+    seen.add(key);
+    return { ...f, key };
+  });
 }
 
 export async function POST(req: Request) {
@@ -45,6 +67,7 @@ export async function POST(req: Request) {
     }
 
     const { formType, formDescription, ocrPreview } = inferFormMetadata(file.name);
+    const { ocrText } = await extractUploadText(file, ocrPreview);
     const supabase = createServerSupabase();
 
     const { data: createdDoc, error: docError } = await supabase
@@ -53,7 +76,7 @@ export async function POST(req: Request) {
         file_name: file.name,
         form_type: formType,
         form_description: formDescription,
-        ocr_text: ocrPreview,
+        ocr_text: ocrText,
       })
       .select("id, file_name, form_type, form_description, ocr_text")
       .single();
@@ -93,6 +116,37 @@ export async function POST(req: Request) {
 
     await supabase.from("action_items").insert(actionItems);
 
+    let reviewFields: ReviewField[] = [];
+    try {
+      const rawFields = await extractReviewFieldsFromUploadContext({
+        fileName: createdDoc.file_name,
+        formType: createdDoc.form_type ?? formType,
+        formDescription: createdDoc.form_description ?? formDescription,
+        ocrText: createdDoc.ocr_text ?? ocrPreview,
+        language,
+      });
+      reviewFields = dedupeFieldKeys(rawFields);
+
+      const payload: AiExtractionPayload = {
+        fields: reviewFields,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const { error: updateError } = await supabase
+        .from("documents")
+        .update({ ai_extraction: payload as unknown as Record<string, unknown> })
+        .eq("id", createdDoc.id);
+
+      if (updateError) {
+        console.warn(
+          "[upload] ai_extraction column missing or update failed — run sql/05_documents_ai_extraction.sql",
+          updateError.message,
+        );
+      }
+    } catch (e) {
+      console.warn("[upload] review field extraction failed:", e);
+    }
+
     return Response.json({
       documentId: createdDoc.id,
       fileName: createdDoc.file_name,
@@ -100,6 +154,7 @@ export async function POST(req: Request) {
       formDescription: createdDoc.form_description,
       ocrPreview: createdDoc.ocr_text,
       language,
+      reviewFields,
     });
   } catch {
     return Response.json(
