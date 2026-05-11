@@ -95,6 +95,70 @@ export async function signup(
   redirect("/profile");
 }
 
+export async function requestPasswordReset(
+  _prevState: AuthFormState | undefined,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = readString(formData, "email");
+
+  if (!email) {
+    return { error: "Email is required." };
+  }
+
+  const supabase = await createClient();
+  const origin = await getOrigin();
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/confirm?next=/reset-password`,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    message:
+      "If an account exists for that email, a reset link is on its way.",
+  };
+}
+
+export async function updatePassword(
+  _prevState: AuthFormState | undefined,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const password = readString(formData, "password");
+  const confirm = readString(formData, "confirmPassword");
+
+  if (!password || !confirm) {
+    return { error: "Please fill out both password fields." };
+  }
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters." };
+  }
+  if (password !== confirm) {
+    return { error: "Passwords do not match." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      error: "Your reset link is invalid or has expired. Request a new one.",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/profile");
+}
+
 export async function logout(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
