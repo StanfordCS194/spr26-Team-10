@@ -2,10 +2,10 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AppNav } from "@/components/dazl/app-nav/app-nav";
-import { StepSidebar, type Step } from "@/components/dazl/step-sidebar/step-sidebar";
-import { UploadCard } from "@/components/dazl/upload-card/upload-card";
-import { PageSplit } from "@/components/dazl/page-split/page-split";
+import { AppNav } from "@/components/navigation/app-nav";
+import { StepSidebar, type Step } from "@/components/step-flow/step-sidebar/step-sidebar";
+import { UploadCard } from "@/components/step-flow/upload-card/upload-card";
+import { PageSplit } from "@/components/step-flow/page-split/page-split";
 import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "../upload.module.css";
 

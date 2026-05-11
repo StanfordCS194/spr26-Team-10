@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AppNav } from "@/components/dazl/app-nav/app-nav";
+import { AppNav } from "@/components/navigation/app-nav";
 import LanguageDropdown, {
   languages,
   type LanguageOption,
@@ -24,13 +24,17 @@ import {
   IconShieldHeart,
   IconWorld,
 } from "@tabler/icons-react";
-import styles from "./home.module.css";
+import styles from "./landing-page.module.css";
 
 const STATS = [
-  { num: "47k+", label: "Forms understood by real people", blue: false },
+  { num: "50+", label: "Forms understood by real people", blue: false },
   { num: "5", label: "Languages supported", blue: true },
   { num: "4.9/5", label: "Average user satisfaction", blue: false },
-  { num: "0", label: "Documents stored after your session ends", blue: false },
+  {
+    num: "Zero",
+    label: "Documents stored after your session ends",
+    blue: false,
+  },
 ];
 
 const TRUST = [
@@ -83,7 +87,7 @@ function stepHref(path: string, lang: LanguageOption) {
   return `${path}?language=${encodeURIComponent(lang.code)}`;
 }
 
-export function DazlLandingClient() {
+export function LandingPageClient() {
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageOption>(
     languages[0],
   );

@@ -18,9 +18,9 @@ import {
   IconCalendar,
   IconCurrencyDollar,
 } from "@tabler/icons-react";
-import { AppNav } from "@/components/dazl/app-nav/app-nav";
-import { StepSidebar, type Step } from "@/components/dazl/step-sidebar/step-sidebar";
-import { PageSplit } from "@/components/dazl/page-split/page-split";
+import { AppNav } from "@/components/navigation/app-nav";
+import { StepSidebar, type Step } from "@/components/step-flow/step-sidebar/step-sidebar";
+import { PageSplit } from "@/components/step-flow/page-split/page-split";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import type { ReviewField, ReviewFieldIcon } from "@/types/review-field";
 import { reviewLabels } from "@/lib/review-labels";

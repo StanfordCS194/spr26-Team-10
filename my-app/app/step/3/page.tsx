@@ -19,11 +19,11 @@ import {
   IconSparkles,
   IconUpload,
 } from "@tabler/icons-react";
-import { AppNav } from "@/components/dazl/app-nav/app-nav";
+import { AppNav } from "@/components/navigation/app-nav";
 import MessageBubble from "@/app/chat/MessageBubble";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import { resolveLanguageForStep } from "@/lib/language-preference";
-import styles from "@/app/chat/chat-dazl.module.css";
+import styles from "@/app/chat/chat-panel.module.css";
 
 type SidebarActionItem = {
   id: string;

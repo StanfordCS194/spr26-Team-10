@@ -1,7 +1,7 @@
 import type { UIMessage } from "ai";
 import { IconChevronRight, IconSparkles } from "@tabler/icons-react";
 import { messageMeta } from "./messages";
-import styles from "./chat-dazl.module.css";
+import styles from "./chat-panel.module.css";
 
 function getText(message: UIMessage): string {
   return message.parts

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DazlLandingClient } from "@/components/dazl/landing/DazlLandingClient";
+import { LandingPageClient } from "@/components/landing/LandingPageClient";
 
 export const metadata: Metadata = {
   title: "formly.ai — Understand any government form, in your language",
@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="dazl-root">
-      <DazlLandingClient />
+    <div className="formly-root">
+      <LandingPageClient />
     </div>
   );
 }

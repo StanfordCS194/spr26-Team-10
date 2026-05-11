@@ -11,7 +11,7 @@
   border-width: 0;
 }
 
-.dazl-root {
+.formly-root {
   font-family: var(--family-body);
   background: var(--color-bg-page);
   color: var(--color-text-primary);

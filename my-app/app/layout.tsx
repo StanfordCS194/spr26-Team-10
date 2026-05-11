@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import "@/styles/dazl/theme.css";
-import "@/styles/dazl/dazl-root.css";
+import "@/styles/formly/theme.css";
+import "@/styles/formly/formly-root.css";
 
 const inter = Inter({
   variable: "--font-inter",

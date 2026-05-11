@@ -4,6 +4,9 @@ import {
   type ReviewField,
   type AiExtractionPayload,
 } from "@/lib/review-extraction";
+import { extractUploadText } from "@/lib/extract-upload-text";
+
+export const runtime = "nodejs";
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
 
@@ -64,6 +67,7 @@ export async function POST(req: Request) {
     }
 
     const { formType, formDescription, ocrPreview } = inferFormMetadata(file.name);
+    const { ocrText } = await extractUploadText(file, ocrPreview);
     const supabase = createServerSupabase();
 
     const { data: createdDoc, error: docError } = await supabase
@@ -72,7 +76,7 @@ export async function POST(req: Request) {
         file_name: file.name,
         form_type: formType,
         form_description: formDescription,
-        ocr_text: ocrPreview,
+        ocr_text: ocrText,
       })
       .select("id, file_name, form_type, form_description, ocr_text")
       .single();
