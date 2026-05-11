@@ -59,10 +59,10 @@ async function fetchDocumentContext(documentId: string): Promise<string> {
       raw.length > MAX_DOCUMENT_TEXT_IN_PROMPT
         ? `${raw.slice(0, MAX_DOCUMENT_TEXT_IN_PROMPT)}\n\n[Text truncated for length.]`
         : raw;
-    lines.push(`Text associated with this upload (OCR or summary):\n${clipped}`);
+    lines.push(`Text from the user's upload (model summary):\n${clipped}`);
   } else {
     lines.push(
-      "(No OCR or extracted text is stored for this upload yet — use the filename and form hints above, and ask the user to name specific lines or sections if needed.)",
+      "(No stored document summary yet — use the filename and form hints above, and ask the user to name specific lines or sections if needed.)",
     );
   }
 
@@ -141,8 +141,8 @@ function buildSystemPrompt(
 
   const docBlock = documentContext
     ? [
-        "The user has an active uploaded document. A \"User's uploaded document\" section below summarizes what the app knows about that file (name, inferred form type, and any stored OCR or summary text).",
-        "When that section is present, you ARE working in context of that upload — do not say you cannot see or access their document. Use the filename, form hints, and any OCR text provided. If OCR is missing or thin, say what you can infer from the filename and general form knowledge, and invite them to quote a line or box number.",
+        "The user has an active uploaded document. A \"User's uploaded document\" section below summarizes what the app knows about that file (name, inferred form type, and any stored summary text from the upload step).",
+        "When that section is present, you ARE working in context of that upload — do not say you cannot see or access their document. Use the filename, form hints, and any stored summary provided. If the summary is missing or thin, say what you can infer from the filename and general form knowledge, and invite them to quote a line or box number.",
       ].join(" ")
     : "";
 

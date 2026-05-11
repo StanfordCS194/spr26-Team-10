@@ -74,7 +74,7 @@ export async function GET(
         formType: document.form_type,
         formDescription: document.form_description,
         reviewFields,
-        ocrPreview:
+        documentText:
           typeof document.ocr_text === "string" ? document.ocr_text : "",
       },
       actionItems: (actionItems ?? []).map((item) => ({

@@ -100,7 +100,7 @@ function ReviewStepInner() {
   const [loadError, setLoadError] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [reviewFields, setReviewFields] = useState<ReviewField[]>([]);
-  const [ocrPreview, setOcrPreview] = useState("");
+  const [documentPreview, setDocumentPreview] = useState("");
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
 
@@ -126,7 +126,7 @@ function ReviewStepInner() {
           document?: {
             fileName?: string;
             reviewFields?: unknown;
-            ocrPreview?: string;
+            documentText?: string;
           };
           error?: string;
           details?: string;
@@ -142,8 +142,8 @@ function ReviewStepInner() {
         const doc = data.document;
         setUploadedFileName(doc.fileName ?? "Document");
         setReviewFields(normalizeReviewFields(doc.reviewFields));
-        setOcrPreview(
-          typeof doc.ocrPreview === "string" ? doc.ocrPreview : "",
+        setDocumentPreview(
+          typeof doc.documentText === "string" ? doc.documentText : "",
         );
         setConfirmed({});
         setFlagged({});
@@ -164,6 +164,51 @@ function ReviewStepInner() {
       cancelled = true;
     };
   }, [documentId, router]);
+
+  /** AI review rows are written shortly after upload via `after()`; poll until they appear. */
+  useEffect(() => {
+    if (loadState !== "ready" || !documentId || reviewFields.length > 0) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 28;
+    const intervalMs = 2500;
+
+    const id = window.setInterval(async () => {
+      if (cancelled) return;
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        window.clearInterval(id);
+        return;
+      }
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`);
+        const data = (await response.json()) as {
+          document?: { reviewFields?: unknown; documentText?: string };
+        };
+        if (cancelled || !response.ok || !data.document) return;
+        const text =
+          typeof data.document.documentText === "string"
+            ? data.document.documentText
+            : "";
+        if (text.length > 0) {
+          setDocumentPreview((prev) => (text.length > prev.length ? text : prev));
+        }
+        const next = normalizeReviewFields(data.document.reviewFields);
+        if (next.length > 0) {
+          setReviewFields(next);
+          window.clearInterval(id);
+        }
+      } catch {
+        /* ignore transient errors while waiting for background extraction */
+      }
+    }, intervalMs);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [loadState, documentId, reviewFields.length]);
 
   const steps: Step[] = [
     {
@@ -195,7 +240,7 @@ function ReviewStepInner() {
   }, []);
 
   const previewText =
-    ocrPreview.trim() ||
+    documentPreview.trim() ||
     "We could not show a preview. You can still confirm to continue, or go back and try another file.";
 
   const rowsForUi = useMemo((): ReviewField[] => {
