@@ -6,6 +6,14 @@ import { PDFParse } from "pdf-parse";
 const VISION_MODEL = "gpt-4o-mini";
 const MAX_STORED_CHARS = 120_000;
 
+/** Skip pdf.js for huge files (avoids dev server OOM on multi‑hundred‑page PDFs). */
+const MAX_PDF_BYTES_FOR_PARSE = 25 * 1024 * 1024;
+/** Only extract text from the first N pages (pdf.js memory scales with pages). */
+const MAX_PDF_PAGES_TO_PARSE = 35;
+
+/** Vision: avoid loading enormous images into a single data URL. */
+const MAX_IMAGE_BYTES_FOR_VISION = 20 * 1024 * 1024;
+
 function mimeFromFile(file: File): string {
   if (file.type) return file.type;
   const n = file.name.toLowerCase();
@@ -40,8 +48,16 @@ function isRasterImage(file: File): boolean {
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const parser = new PDFParse({ data: buffer });
   try {
-    const result = await parser.getText();
-    return (result.text ?? "").trim();
+    const result = await parser.getText({ first: MAX_PDF_PAGES_TO_PARSE });
+    const text = (result.text ?? "").trim();
+    if (!text) return "";
+    const docPages = result.total;
+    const truncated =
+      typeof docPages === "number" && docPages > MAX_PDF_PAGES_TO_PARSE;
+    const note = truncated
+      ? `\n\n[Showing the first ${MAX_PDF_PAGES_TO_PARSE} of ${docPages} pages only. For later pages, upload a shorter PDF or a clear photo of the page you need.]`
+      : "";
+    return text + note;
   } finally {
     await parser.destroy().catch(() => {});
   }
@@ -52,6 +68,10 @@ async function extractImageTextWithVision(
   buffer: Buffer,
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY?.trim()) {
+    return "";
+  }
+
+  if (buffer.length > MAX_IMAGE_BYTES_FOR_VISION) {
     return "";
   }
 
@@ -113,11 +133,15 @@ export async function extractUploadText(
   let source: ExtractUploadTextResult["source"] = "none";
 
   if (isPdf(file)) {
-    try {
-      extracted = await extractPdfText(buffer);
-      if (extracted.length > 0) source = "pdf";
-    } catch {
+    if (buffer.length > MAX_PDF_BYTES_FOR_PARSE) {
       extracted = "";
+    } else {
+      try {
+        extracted = await extractPdfText(buffer);
+        if (extracted.length > 0) source = "pdf";
+      } catch {
+        extracted = "";
+      }
     }
   } else if (isRasterImage(file)) {
     try {
