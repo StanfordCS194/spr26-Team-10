@@ -11,6 +11,8 @@ const appDir = path.dirname(fileURLToPath(import.meta.url));
  * "Compiling..." while failing to resolve Tailwind.
  */
 const nextConfig: NextConfig = {
+  // pdf-parse uses dynamic requires that break when bundled — keep it as a native require
+  serverExternalPackages: ["pdf-parse"],
   turbopack: {
     root: appDir,
   },
