@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
 import {
   extractReviewFieldsFromUploadContext,
@@ -7,9 +8,8 @@ import {
 import { extractUploadText } from "@/lib/extract-upload-text";
 
 export const runtime = "nodejs";
-// OCR (vision) + structured review-field generation can each take several seconds.
-// Vercel's default function timeout is 10s, which is not enough and causes the
-// platform to return an HTML error page (which the client cannot parse as JSON).
+// Keep the synchronous part of this handler under Vercel's default budget (~10s on Hobby).
+// Heavy OpenAI work runs in `after()` so the client gets JSON immediately; step 2 polls until rows exist.
 export const maxDuration = 60;
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
@@ -120,36 +120,38 @@ export async function POST(req: Request) {
 
     await supabase.from("action_items").insert(actionItems);
 
-    let reviewFields: ReviewField[] = [];
-    try {
-      const rawFields = await extractReviewFieldsFromUploadContext({
-        fileName: createdDoc.file_name,
-        formType: createdDoc.form_type ?? formType,
-        formDescription: createdDoc.form_description ?? formDescription,
-        ocrText: createdDoc.ocr_text ?? ocrPreview,
-        language,
-      });
-      reviewFields = dedupeFieldKeys(rawFields);
+    const documentId = createdDoc.id;
+    const extractionInput = {
+      fileName: createdDoc.file_name,
+      formType: (createdDoc.form_type ?? formType) as string,
+      formDescription: (createdDoc.form_description ?? formDescription) as string,
+      ocrText: (createdDoc.ocr_text ?? ocrPreview) as string,
+      language,
+    };
 
-      const payload: AiExtractionPayload = {
-        fields: reviewFields,
-        generatedAt: new Date().toISOString(),
-      };
-
-      const { error: updateError } = await supabase
-        .from("documents")
-        .update({ ai_extraction: payload as unknown as Record<string, unknown> })
-        .eq("id", createdDoc.id);
-
-      if (updateError) {
-        console.warn(
-          "[upload] ai_extraction column missing or update failed — run sql/05_documents_ai_extraction.sql",
-          updateError.message,
-        );
+    after(async () => {
+      try {
+        const sb = createServerSupabase();
+        const rawFields = await extractReviewFieldsFromUploadContext(extractionInput);
+        const deferredFields = dedupeFieldKeys(rawFields);
+        const payload: AiExtractionPayload = {
+          fields: deferredFields,
+          generatedAt: new Date().toISOString(),
+        };
+        const { error: updateError } = await sb
+          .from("documents")
+          .update({ ai_extraction: payload as unknown as Record<string, unknown> })
+          .eq("id", documentId);
+        if (updateError) {
+          console.warn(
+            "[upload] ai_extraction column missing or update failed — run sql/05_documents_ai_extraction.sql",
+            updateError.message,
+          );
+        }
+      } catch (e) {
+        console.warn("[upload] review field extraction failed (after):", e);
       }
-    } catch (e) {
-      console.warn("[upload] review field extraction failed:", e);
-    }
+    });
 
     return Response.json({
       documentId: createdDoc.id,
@@ -158,7 +160,7 @@ export async function POST(req: Request) {
       formDescription: createdDoc.form_description,
       ocrPreview: createdDoc.ocr_text,
       language,
-      reviewFields,
+      reviewFields: [] as ReviewField[],
     });
   } catch (err) {
     console.error("[upload] unexpected error:", err);

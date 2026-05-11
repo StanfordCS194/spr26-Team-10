@@ -165,6 +165,44 @@ function ReviewStepInner() {
     };
   }, [documentId, router]);
 
+  /** AI review rows are written shortly after upload via `after()`; poll until they appear. */
+  useEffect(() => {
+    if (loadState !== "ready" || !documentId || reviewFields.length > 0) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 28;
+    const intervalMs = 2500;
+
+    const id = window.setInterval(async () => {
+      if (cancelled) return;
+      attempts += 1;
+      if (attempts > maxAttempts) {
+        window.clearInterval(id);
+        return;
+      }
+      try {
+        const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`);
+        const data = (await response.json()) as {
+          document?: { reviewFields?: unknown };
+        };
+        if (cancelled || !response.ok || !data.document) return;
+        const next = normalizeReviewFields(data.document.reviewFields);
+        if (next.length > 0) {
+          setReviewFields(next);
+          window.clearInterval(id);
+        }
+      } catch {
+        /* ignore transient errors while waiting for background extraction */
+      }
+    }, intervalMs);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [loadState, documentId, reviewFields.length]);
+
   const steps: Step[] = [
     {
       number: 1,
