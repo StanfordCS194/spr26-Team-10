@@ -1,15 +1,13 @@
+import { Buffer } from "node:buffer";
 import { after } from "next/server";
 import { createServerSupabase } from "@/lib/supabase-server";
+import type { AiExtractionPayload, ReviewField } from "@/types/review-field";
 import {
-  extractReviewFieldsFromUploadContext,
-  type ReviewField,
-  type AiExtractionPayload,
-} from "@/lib/review-extraction";
-import { extractUploadText } from "@/lib/extract-upload-text";
+  dedupeFieldKeys,
+  extractDocumentAndReviewFromUpload,
+} from "@/lib/upload-llm-extraction";
 
 export const runtime = "nodejs";
-// Keep the synchronous part of this handler under Vercel's default budget (~10s on Hobby).
-// Heavy OpenAI work runs in `after()` so the client gets JSON immediately; step 2 polls until rows exist.
 export const maxDuration = 60;
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
@@ -20,7 +18,7 @@ function inferFormMetadata(fileName: string) {
     return {
       formType: "Form I-765",
       formDescription: "Employment Authorization",
-      ocrPreview:
+      heuristicHint:
         "Part 2, Question 3 requests your full legal name exactly as it appears on your official records.",
     };
   }
@@ -33,31 +31,17 @@ function inferFormMetadata(fileName: string) {
     return {
       formType: "Form 1040 series (IRS)",
       formDescription: "U.S. individual income tax",
-      ocrPreview:
-        "This upload appears to be a Form 1040 family tax document. The assistant can help interpret line items and schedules once real OCR is wired; for now use the filename and your questions.",
+      heuristicHint:
+        "This upload appears to be a Form 1040 family tax document. The assistant can help interpret line items and schedules; use the filename and visible form text for specifics.",
     };
   }
 
   return {
     formType: "Government Form",
     formDescription: "General Document",
-    ocrPreview:
-      "We extracted text from your upload. Ask follow-up questions in chat for field-by-field guidance.",
+    heuristicHint:
+      "We will read your document and help you understand fields, deadlines, and requirements in plain language.",
   };
-}
-
-function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
-  const seen = new Set<string>();
-  return fields.map((f) => {
-    let key = f.key;
-    let n = 2;
-    while (seen.has(key)) {
-      key = `${f.key}_${n}`;
-      n += 1;
-    }
-    seen.add(key);
-    return { ...f, key };
-  });
 }
 
 export async function POST(req: Request) {
@@ -70,8 +54,10 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing upload file" }, { status: 400 });
     }
 
-    const { formType, formDescription, ocrPreview } = inferFormMetadata(file.name);
-    const { ocrText } = await extractUploadText(file, ocrPreview);
+    const { formType, formDescription, heuristicHint } = inferFormMetadata(file.name);
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const fileMeta = { name: file.name, type: file.type };
+
     const supabase = createServerSupabase();
 
     const { data: createdDoc, error: docError } = await supabase
@@ -80,7 +66,7 @@ export async function POST(req: Request) {
         file_name: file.name,
         form_type: formType,
         form_description: formDescription,
-        ocr_text: ocrText,
+        ocr_text: heuristicHint,
       })
       .select("id, file_name, form_type, form_description, ocr_text")
       .single();
@@ -121,35 +107,68 @@ export async function POST(req: Request) {
     await supabase.from("action_items").insert(actionItems);
 
     const documentId = createdDoc.id;
-    const extractionInput = {
-      fileName: createdDoc.file_name,
-      formType: (createdDoc.form_type ?? formType) as string,
-      formDescription: (createdDoc.form_description ?? formDescription) as string,
-      ocrText: (createdDoc.ocr_text ?? ocrPreview) as string,
-      language,
-    };
 
     after(async () => {
       try {
         const sb = createServerSupabase();
-        const rawFields = await extractReviewFieldsFromUploadContext(extractionInput);
-        const deferredFields = dedupeFieldKeys(rawFields);
+        let documentSummary: string;
+        let reviewFields: ReviewField[];
+
+        try {
+          const extracted = await extractDocumentAndReviewFromUpload({
+            buffer: fileBuffer,
+            meta: fileMeta,
+            language,
+            formType,
+            formDescription,
+            heuristicHint,
+          });
+          documentSummary = extracted.documentSummary;
+          reviewFields = extracted.fields;
+        } catch (e) {
+          console.warn("[upload] LLM extraction failed (after), using heuristics only:", e);
+          documentSummary = heuristicHint;
+          reviewFields = dedupeFieldKeys([
+            {
+              key: "document_type",
+              label: "Document",
+              value: `${formType} — extraction unavailable; confirm details from your file.`,
+              icon: "file",
+            },
+            {
+              key: "purpose",
+              label: "Purpose",
+              value: formDescription,
+              icon: "user",
+            },
+            {
+              key: "next_step",
+              label: "Next step",
+              value:
+                "Check that OPENAI_API_KEY is set on the server, then re-upload or refresh the review step.",
+              icon: "alert",
+            },
+          ]);
+        }
+
         const payload: AiExtractionPayload = {
-          fields: deferredFields,
+          fields: reviewFields,
           generatedAt: new Date().toISOString(),
         };
-        const { error: updateError } = await sb
+
+        const { error: updateErr } = await sb
           .from("documents")
-          .update({ ai_extraction: payload as unknown as Record<string, unknown> })
+          .update({
+            ocr_text: documentSummary,
+            ai_extraction: payload as unknown as Record<string, unknown>,
+          })
           .eq("id", documentId);
-        if (updateError) {
-          console.warn(
-            "[upload] ai_extraction column missing or update failed — run sql/05_documents_ai_extraction.sql",
-            updateError.message,
-          );
+
+        if (updateErr) {
+          console.warn("[upload] document update failed (after):", updateErr.message);
         }
       } catch (e) {
-        console.warn("[upload] review field extraction failed (after):", e);
+        console.warn("[upload] deferred pipeline failed (after):", e);
       }
     });
 
@@ -158,7 +177,7 @@ export async function POST(req: Request) {
       fileName: createdDoc.file_name,
       formType: createdDoc.form_type,
       formDescription: createdDoc.form_description,
-      ocrPreview: createdDoc.ocr_text,
+      documentText: createdDoc.ocr_text,
       language,
       reviewFields: [] as ReviewField[],
     });

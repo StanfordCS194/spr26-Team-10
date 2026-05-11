@@ -12,3 +12,9 @@ export type ReviewField = {
   value: string;
   icon: ReviewFieldIcon;
 };
+
+/** Stored JSON in `documents.ai_extraction`. */
+export type AiExtractionPayload = {
+  fields: ReviewField[];
+  generatedAt: string;
+};

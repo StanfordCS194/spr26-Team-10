@@ -100,7 +100,7 @@ function ReviewStepInner() {
   const [loadError, setLoadError] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [reviewFields, setReviewFields] = useState<ReviewField[]>([]);
-  const [ocrPreview, setOcrPreview] = useState("");
+  const [documentPreview, setDocumentPreview] = useState("");
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
 
@@ -126,7 +126,7 @@ function ReviewStepInner() {
           document?: {
             fileName?: string;
             reviewFields?: unknown;
-            ocrPreview?: string;
+            documentText?: string;
           };
           error?: string;
           details?: string;
@@ -142,8 +142,8 @@ function ReviewStepInner() {
         const doc = data.document;
         setUploadedFileName(doc.fileName ?? "Document");
         setReviewFields(normalizeReviewFields(doc.reviewFields));
-        setOcrPreview(
-          typeof doc.ocrPreview === "string" ? doc.ocrPreview : "",
+        setDocumentPreview(
+          typeof doc.documentText === "string" ? doc.documentText : "",
         );
         setConfirmed({});
         setFlagged({});
@@ -184,9 +184,16 @@ function ReviewStepInner() {
       try {
         const response = await fetch(`/api/documents/${encodeURIComponent(documentId)}`);
         const data = (await response.json()) as {
-          document?: { reviewFields?: unknown };
+          document?: { reviewFields?: unknown; documentText?: string };
         };
         if (cancelled || !response.ok || !data.document) return;
+        const text =
+          typeof data.document.documentText === "string"
+            ? data.document.documentText
+            : "";
+        if (text.length > 0) {
+          setDocumentPreview((prev) => (text.length > prev.length ? text : prev));
+        }
         const next = normalizeReviewFields(data.document.reviewFields);
         if (next.length > 0) {
           setReviewFields(next);
@@ -233,7 +240,7 @@ function ReviewStepInner() {
   }, []);
 
   const previewText =
-    ocrPreview.trim() ||
+    documentPreview.trim() ||
     "We could not show a preview. You can still confirm to continue, or go back and try another file.";
 
   const rowsForUi = useMemo((): ReviewField[] => {
