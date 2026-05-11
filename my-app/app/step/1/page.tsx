@@ -55,18 +55,31 @@ function UploadStepInner() {
         body: payload,
       });
 
-      const data = (await response.json()) as {
+      // Read as text first so HTML error pages (timeout/5xx from the platform)
+      // surface a real message instead of crashing JSON.parse.
+      const rawBody = await response.text();
+      let data: {
         documentId?: string;
         error?: string;
         details?: string;
         hint?: string;
-      };
+      } = {};
+      try {
+        data = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        const snippet = rawBody.slice(0, 120).replace(/\s+/g, " ").trim();
+        throw new Error(
+          response.status === 504 || response.status === 408
+            ? "The upload took too long and was cancelled by the server. Please try a smaller file."
+            : `Server returned a non-JSON response (HTTP ${response.status}). ${snippet ? `Body starts with: ${snippet}` : ""}`,
+        );
+      }
 
       if (!response.ok || !data.documentId) {
         const message = [data.error, data.details, data.hint]
           .filter(Boolean)
           .join(". ");
-        throw new Error(message || "Upload failed");
+        throw new Error(message || `Upload failed (HTTP ${response.status})`);
       }
 
       router.push(

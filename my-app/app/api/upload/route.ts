@@ -7,6 +7,10 @@ import {
 import { extractUploadText } from "@/lib/extract-upload-text";
 
 export const runtime = "nodejs";
+// OCR (vision) + structured review-field generation can each take several seconds.
+// Vercel's default function timeout is 10s, which is not enough and causes the
+// platform to return an HTML error page (which the client cannot parse as JSON).
+export const maxDuration = 60;
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
 
@@ -156,9 +160,13 @@ export async function POST(req: Request) {
       language,
       reviewFields,
     });
-  } catch {
+  } catch (err) {
+    console.error("[upload] unexpected error:", err);
     return Response.json(
-      { error: "Unexpected upload processing error" },
+      {
+        error: "Unexpected upload processing error",
+        details: err instanceof Error ? err.message : String(err),
+      },
       { status: 500 },
     );
   }
