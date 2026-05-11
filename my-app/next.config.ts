@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: appDir,
   },
+  // pdf-parse loads pdf.js with an internal worker; let Node require it at
+  // runtime instead of having Next/webpack try to bundle it for serverless.
+  serverExternalPackages: ["pdf-parse"],
   async redirects() {
     return [
       { source: "/upload", destination: "/step/1", permanent: false },

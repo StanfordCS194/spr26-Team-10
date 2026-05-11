@@ -1,7 +1,6 @@
 import { Buffer } from "node:buffer";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { PDFParse } from "pdf-parse";
 
 const VISION_MODEL = "gpt-4o-mini";
 const MAX_STORED_CHARS = 120_000;
@@ -46,6 +45,11 @@ function isRasterImage(file: File): boolean {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
+  // Dynamic import: pdf-parse pulls in pdf.js which can fail to initialize on
+  // serverless platforms (Vercel) at import time. Importing only when a PDF is
+  // actually uploaded keeps image-only uploads working even if pdf-parse is
+  // broken in the deploy environment.
+  const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText({ first: MAX_PDF_PAGES_TO_PARSE });

@@ -60,6 +60,23 @@ function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
   });
 }
 
+function jsonError(
+  stage: string,
+  err: unknown,
+  status = 500,
+  hint?: string,
+): Response {
+  console.error(`[upload] ${stage} failed:`, err);
+  return Response.json(
+    {
+      error: `Upload failed at: ${stage}`,
+      details: err instanceof Error ? err.message : String(err),
+      ...(hint ? { hint } : {}),
+    },
+    { status },
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -71,8 +88,30 @@ export async function POST(req: Request) {
     }
 
     const { formType, formDescription, ocrPreview } = inferFormMetadata(file.name);
-    const { ocrText } = await extractUploadText(file, ocrPreview);
-    const supabase = createServerSupabase();
+
+    let ocrText: string;
+    try {
+      ({ ocrText } = await extractUploadText(file, ocrPreview));
+    } catch (err) {
+      return jsonError(
+        "text extraction (OCR / vision)",
+        err,
+        500,
+        "Check that OPENAI_API_KEY is set in Vercel for images, and that pdf-parse is installed for PDFs.",
+      );
+    }
+
+    let supabase;
+    try {
+      supabase = createServerSupabase();
+    } catch (err) {
+      return jsonError(
+        "Supabase client init",
+        err,
+        500,
+        "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) in Vercel.",
+      );
+    }
 
     const { data: createdDoc, error: docError } = await supabase
       .from("documents")
