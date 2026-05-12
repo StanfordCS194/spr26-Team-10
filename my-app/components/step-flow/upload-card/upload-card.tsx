@@ -11,12 +11,26 @@ import styles from "./upload-card.module.css";
 const ACCEPTED_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 const FORMAT_CHIPS = ["PNG", "JPG", "PDF", "Photo"];
 
+export interface UploadCardCopy {
+  dropZoneAriaLabel: string;
+  readyToUpload: string;
+  dropTitle: string;
+  dropSubtitle: string;
+  chooseManually: string;
+  chooseFile: string;
+  uploading: string;
+  uploadAndContinue: string;
+  encrypted: string;
+  notStored: string;
+  private: string;
+}
+
 interface UploadCardProps {
   onContinue?: (file: File) => void;
   isLoading?: boolean;
   errorMessage?: string;
-  /** Called when user picks or drops a new file (e.g. clear prior API errors). */
   onFileChange?: () => void;
+  copy: UploadCardCopy;
 }
 
 export function UploadCard({
@@ -24,6 +38,7 @@ export function UploadCard({
   isLoading = false,
   errorMessage,
   onFileChange,
+  copy,
 }: UploadCardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -57,7 +72,9 @@ export function UploadCard({
   return (
     <div className={styles.card}>
       <div
-        className={`${styles.dropZone} ${dragging ? styles.dropZoneDragging : ""} ${file ? styles.dropZoneReady : ""}`}
+        className={`${styles.dropZone} ${
+          dragging ? styles.dropZoneDragging : ""
+        } ${file ? styles.dropZoneReady : ""}`}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -67,7 +84,7 @@ export function UploadCard({
         onClick={() => !isLoading && inputRef.current?.click()}
         role="button"
         tabIndex={0}
-        aria-label="Drop zone — click or drag to upload"
+        aria-label={copy.dropZoneAriaLabel}
         onKeyDown={(e) => {
           if (!isLoading && e.key === "Enter") inputRef.current?.click();
         }}
@@ -81,29 +98,29 @@ export function UploadCard({
           disabled={isLoading}
           aria-hidden
         />
+
         <div className={styles.dropIcon}>
           <IconCloudUpload size={40} stroke={1.5} aria-hidden />
         </div>
+
         {file ? (
           <>
             <p className={styles.dropTitle}>{file.name}</p>
             <p className={styles.dropSub}>
-              {(file.size / 1024).toFixed(0)} KB · ready to upload
+              {(file.size / 1024).toFixed(0)} KB · {copy.readyToUpload}
             </p>
           </>
         ) : (
           <>
-            <p className={styles.dropTitle}>Drop your file here</p>
-            <p className={styles.dropSub}>
-              Drag and drop your form to get started
-            </p>
+            <p className={styles.dropTitle}>{copy.dropTitle}</p>
+            <p className={styles.dropSub}>{copy.dropSubtitle}</p>
           </>
         )}
       </div>
 
       <div className={styles.orRow}>
         <div className={styles.orLine} />
-        <span className={styles.orText}>or choose manually</span>
+        <span className={styles.orText}>{copy.chooseManually}</span>
         <div className={styles.orLine} />
       </div>
 
@@ -118,7 +135,7 @@ export function UploadCard({
           color="var(--color-text-secondary)"
           aria-hidden
         />
-        Choose file from device
+        {copy.chooseFile}
       </button>
 
       <div className={styles.chipRow}>
@@ -142,23 +159,27 @@ export function UploadCard({
         onClick={() => file && onContinue?.(file)}
         aria-disabled={!canContinue}
       >
-        {isLoading ? "Uploading…" : "Upload and continue"}
+        {isLoading ? copy.uploading : copy.uploadAndContinue}
       </button>
 
       <div className={styles.trustRow}>
         <div className={styles.trustItem}>
           <IconShieldLock size={12} color="var(--color-brand)" aria-hidden />
-          <span>Encrypted</span>
+          <span>{copy.encrypted}</span>
         </div>
+
         <div className={styles.trustDot} />
+
         <div className={styles.trustItem}>
           <IconEyeOff size={12} color="var(--color-brand)" aria-hidden />
-          <span>Not stored</span>
+          <span>{copy.notStored}</span>
         </div>
+
         <div className={styles.trustDot} />
+
         <div className={styles.trustItem}>
           <IconLock size={12} color="var(--color-brand)" aria-hidden />
-          <span>Private</span>
+          <span>{copy.private}</span>
         </div>
       </div>
     </div>
