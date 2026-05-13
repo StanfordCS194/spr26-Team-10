@@ -9,6 +9,11 @@ const PUBLIC_PATHS = [
   "/auth",
 ];
 
+// /api routes still have their session cookies refreshed here, but they
+// return 401 from the route handler themselves instead of being redirected
+// (a JSON client cannot follow an HTML redirect to /login).
+const SKIP_REDIRECT_PREFIXES = ["/api/"];
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -43,8 +48,11 @@ export async function updateSession(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
+  const skipRedirect = SKIP_REDIRECT_PREFIXES.some((prefix) =>
+    pathname.startsWith(prefix),
+  );
 
-  if (!user && !isPublic && pathname !== "/") {
+  if (!user && !isPublic && !skipRedirect && pathname !== "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);

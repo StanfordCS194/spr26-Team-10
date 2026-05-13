@@ -15,6 +15,28 @@ function readString(formData: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * Only allow redirects that stay on this origin. Anything that doesn't look
+ * like a local path (`/profile`, `/step/3?id=…`) is rejected so a crafted
+ * `?redirectTo=https://evil.com` cannot send the user off-site.
+ */
+function safeRedirectPath(
+  candidate: string | null | undefined,
+  fallback: string,
+): string {
+  if (!candidate) return fallback;
+  // Must start with a single "/" and not "//" (which is a protocol-relative URL)
+  // and must not contain a scheme like "http:" / "javascript:".
+  if (
+    !candidate.startsWith("/") ||
+    candidate.startsWith("//") ||
+    candidate.startsWith("/\\")
+  ) {
+    return fallback;
+  }
+  return candidate;
+}
+
 async function getOrigin(): Promise<string> {
   const headerStore = await headers();
   const origin = headerStore.get("origin");
@@ -33,7 +55,10 @@ export async function login(
 ): Promise<AuthFormState> {
   const email = readString(formData, "email");
   const password = readString(formData, "password");
-  const redirectTo = readString(formData, "redirectTo") || "/profile";
+  const redirectTo = safeRedirectPath(
+    readString(formData, "redirectTo"),
+    "/profile",
+  );
 
   if (!email || !password) {
     return { error: "Email and password are required." };
