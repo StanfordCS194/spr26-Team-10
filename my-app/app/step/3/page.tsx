@@ -2,15 +2,16 @@
 
 import {
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   IconArrowUp,
   IconChevronRight,
@@ -21,6 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
 import MessageBubble from "@/app/chat/MessageBubble";
+import ChatHistorySidebar from "@/app/chat/ChatHistorySidebar";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "@/app/chat/chat-panel.module.css";
@@ -67,6 +69,14 @@ type UiLabels = {
   suggestQ1: string;
   suggestQ2: string;
   suggestQ3: string;
+  yourChats: string;
+  newChat: string;
+  noChats: string;
+  loadingChats: string;
+  chatsLoadFailed: string;
+  deleteChatConfirm: string;
+  deleteChatLabel: string;
+  untitledChat: string;
 };
 
 const uiLabels: Record<LanguageOption["code"], UiLabels> = {
@@ -102,6 +112,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "What documents do I need to gather?",
     suggestQ2: "What does this line mean?",
     suggestQ3: "Can I file an extension?",
+    yourChats: "Your chats",
+    newChat: "New chat",
+    noChats: "No chats yet. Ask a question to start one.",
+    loadingChats: "Loading chats…",
+    chatsLoadFailed: "Could not load your chats.",
+    deleteChatConfirm: "Delete this chat permanently?",
+    deleteChatLabel: "Delete chat",
+    untitledChat: "Untitled chat",
   },
   es: {
     subtitle: "Lenguaje claro. Tu idioma. Sin jerga.",
@@ -135,6 +153,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "¿Qué documentos necesito reunir?",
     suggestQ2: "¿Qué significa esta línea?",
     suggestQ3: "¿Puedo pedir una prórroga?",
+    yourChats: "Tus chats",
+    newChat: "Nuevo chat",
+    noChats: "Aún no tienes chats. Haz una pregunta para empezar.",
+    loadingChats: "Cargando chats…",
+    chatsLoadFailed: "No se pudieron cargar tus chats.",
+    deleteChatConfirm: "¿Eliminar este chat permanentemente?",
+    deleteChatLabel: "Eliminar chat",
+    untitledChat: "Chat sin título",
   },
   zh: {
     subtitle: "清晰易懂。用你的语言。没有术语障碍。",
@@ -165,6 +191,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "我需要准备哪些材料？",
     suggestQ2: "这一栏是什么意思？",
     suggestQ3: "我可以申请延期吗？",
+    yourChats: "你的对话",
+    newChat: "新建对话",
+    noChats: "还没有对话，提个问题开始吧。",
+    loadingChats: "正在加载对话…",
+    chatsLoadFailed: "无法加载对话列表。",
+    deleteChatConfirm: "永久删除此对话？",
+    deleteChatLabel: "删除对话",
+    untitledChat: "未命名对话",
   },
   ar: {
     subtitle: "لغة واضحة. لغتك. بلا مصطلحات معقدة.",
@@ -196,6 +230,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "ما المستندات التي أحتاجها؟",
     suggestQ2: "ماذا يعني هذا السطر؟",
     suggestQ3: "هل يمكنني طلب تمديد؟",
+    yourChats: "محادثاتك",
+    newChat: "محادثة جديدة",
+    noChats: "لا توجد محادثات بعد. اطرح سؤالاً للبدء.",
+    loadingChats: "جارٍ تحميل المحادثات…",
+    chatsLoadFailed: "تعذر تحميل محادثاتك.",
+    deleteChatConfirm: "حذف هذه المحادثة نهائيًا؟",
+    deleteChatLabel: "حذف المحادثة",
+    untitledChat: "محادثة بدون عنوان",
   },
   fr: {
     subtitle: "Langage simple. Votre langue. Pas de jargon.",
@@ -230,35 +272,258 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "Quels documents dois-je rassembler ?",
     suggestQ2: "Que signifie cette ligne ?",
     suggestQ3: "Puis-je demander une prolongation ?",
+    yourChats: "Vos discussions",
+    newChat: "Nouvelle discussion",
+    noChats: "Aucune discussion. Posez une question pour démarrer.",
+    loadingChats: "Chargement des discussions…",
+    chatsLoadFailed: "Impossible de charger vos discussions.",
+    deleteChatConfirm: "Supprimer définitivement cette discussion ?",
+    deleteChatLabel: "Supprimer la discussion",
+    untitledChat: "Discussion sans titre",
   },
 };
 
 function SidebarDocSkeleton() {
   return (
     <div className={styles.annotationStack} aria-hidden>
-      <div
-        className={styles.sidebarSkeletonRow}
-        style={{ width: "55%" }}
-      />
-      <div
-        className={styles.sidebarSkeletonRow}
-        style={{ width: "90%" }}
-      />
+      <div className={styles.sidebarSkeletonRow} style={{ width: "55%" }} />
+      <div className={styles.sidebarSkeletonRow} style={{ width: "90%" }} />
     </div>
   );
 }
 
+type ChatThreadProps = {
+  sessionId: string;
+  language: LanguageOption["code"];
+  labels: UiLabels;
+  documentId: string | undefined;
+};
+
+function toUIMessage(row: {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}): UIMessage {
+  return {
+    id: row.id,
+    role: row.role,
+    parts: [{ type: "text", text: row.content }],
+  };
+}
+
+function ChatThread({
+  sessionId,
+  language,
+  labels,
+  documentId,
+}: ChatThreadProps) {
+  const [hydrated, setHydrated] = useState<UIMessage[] | null>(null);
+  const [hydrationError, setHydrationError] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHydrated(null);
+    setHydrationError(null);
+    fetch(`/api/chat-sessions/${sessionId}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{
+          messages: { id: string; role: "user" | "assistant"; content: string }[];
+        }>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setHydrated(data.messages.map(toUIMessage));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHydrated([]);
+        setHydrationError(labels.loadFailed);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, labels.loadFailed]);
+
+  const { messages, sendMessage, status, error, regenerate } = useChat({
+    messages: hydrated ?? [],
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+  });
+
+  const isBusy = status === "submitted" || status === "streaming";
+  const showTyping = isBusy;
+  const hasConversation = messages.length > 0 || showTyping;
+  const isHydrating = hydrated === null;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, showTyping]);
+
+  const handleSend = useCallback(
+    (text?: string) => {
+      const raw = (text ?? inputValue).trim();
+      if (!raw || isBusy) return;
+      sendMessage(
+        { text: raw },
+        {
+          body: {
+            sessionId,
+            language,
+          },
+        },
+      );
+      setInputValue("");
+    },
+    [inputValue, isBusy, language, sendMessage, sessionId],
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const suggestedQuestions = [
+    labels.suggestQ1,
+    labels.suggestQ2,
+    labels.suggestQ3,
+  ];
+
+  return (
+    <>
+      <div
+        className={styles.messages}
+        aria-busy={isBusy || isHydrating}
+        aria-live="polite"
+      >
+        {isHydrating ? (
+          <p className={styles.disclaimer} style={{ padding: "var(--space-4)" }}>
+            {labels.loadingDocument}
+          </p>
+        ) : !hasConversation ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <IconSparkles size={22} stroke={1.5} aria-hidden />
+            </div>
+            <h2 className={styles.emptyHeading}>{labels.emptyHeading}</h2>
+            <p className={styles.emptyText}>{labels.emptySubtext}</p>
+            <div className={styles.suggestions}>
+              {suggestedQuestions.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => handleSend(q)}
+                >
+                  {q}
+                  <IconChevronRight size={12} aria-hidden />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {!isHydrating && hasConversation
+          ? messages.map((m) => (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                onSuggestionClick={(value) => setInputValue(value)}
+              />
+            ))
+          : null}
+
+        {!isHydrating && showTyping ? (
+          <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>
+            <div className={styles.bubbleAvatar}>
+              <IconSparkles size={11} aria-hidden />
+            </div>
+            <div className={styles.typingDots} aria-label={labels.chatWaiting}>
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        ) : null}
+
+        {error || hydrationError ? (
+          <div className={styles.annotationStack}>
+            <div
+              className={styles.annotationCard}
+              style={{ borderColor: "#d70015", background: "#fff2f2" }}
+              role="alert"
+            >
+              <p
+                className={styles.annotationDetail}
+                style={{ color: "#d70015" }}
+              >
+                {error ? labels.errorChat : hydrationError}
+              </p>
+            </div>
+            {error ? (
+              <button
+                type="button"
+                className={styles.suggestionBtn}
+                onClick={() => regenerate()}
+              >
+                {labels.retry}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className={styles.inputArea}>
+        <span className="sr-only">{labels.inputLabel}</span>
+        <div className={styles.inputBox}>
+          <textarea
+            ref={textareaRef}
+            className={styles.textarea}
+            placeholder={
+              !documentId
+                ? labels.chatDisabledPlaceholder
+                : labels.chatPlaceholder
+            }
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            disabled={isBusy || isHydrating}
+            aria-label={labels.inputLabel}
+          />
+          <button
+            type="button"
+            className={styles.sendBtn}
+            onClick={() => handleSend()}
+            disabled={!inputValue.trim() || isBusy || isHydrating}
+            aria-label="Send message"
+          >
+            <IconArrowUp size={14} aria-hidden />
+          </button>
+        </div>
+        <p className={styles.disclaimer}>{labels.footerHint}</p>
+      </div>
+    </>
+  );
+}
+
 function ChatPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId") ?? undefined;
+  const sessionId = searchParams.get("sessionId") ?? undefined;
 
   const selectedLanguage = useMemo(
-    (): LanguageOption =>
-      resolveLanguageForStep(searchParams.get("language")),
+    (): LanguageOption => resolveLanguageForStep(searchParams.get("language")),
     [searchParams],
   );
 
-  const [inputValue, setInputValue] = useState("");
   const [sidebarDocument, setSidebarDocument] =
     useState<SidebarDocument | null>(null);
   const [sidebarActionItems, setSidebarActionItems] = useState<
@@ -267,24 +532,49 @@ function ChatPageContent() {
   const [sidebarError, setSidebarError] = useState("");
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarFetchKey, setSidebarFetchKey] = useState(0);
+  const [creatingSession, setCreatingSession] = useState(false);
 
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const { messages, sendMessage, status, error, regenerate } = useChat({
-    messages: [],
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
-
-  const isBusy = status === "submitted" || status === "streaming";
-  const showTyping = isBusy;
-
+  // Auto-create a chat session whenever we have a documentId but no sessionId
+  // in the URL. The replace() call rewrites the URL so we land on a stable
+  // /step/3?documentId=...&sessionId=... that the user can bookmark or share.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, showTyping]);
+    if (!documentId || sessionId || creatingSession) return;
+    let cancelled = false;
+    setCreatingSession(true);
+
+    fetch("/api/chat-sessions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        documentId,
+        language: selectedLanguage.code,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ session: { id: string } }>;
+      })
+      .then(({ session }) => {
+        if (cancelled) return;
+        const params = new URLSearchParams({
+          documentId,
+          sessionId: session.id,
+          language: selectedLanguage.code,
+        });
+        router.replace(`/step/3?${params.toString()}`);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCreatingSession(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId, sessionId, creatingSession, selectedLanguage.code, router]);
 
   useEffect(() => {
     const loadFailedLabel = uiLabels[selectedLanguage.code].loadFailed;
@@ -319,9 +609,7 @@ function ChatPageContent() {
         }
       } catch (e) {
         if (!cancelled) {
-          setSidebarError(
-            e instanceof Error ? e.message : loadFailedLabel,
-          );
+          setSidebarError(e instanceof Error ? e.message : loadFailedLabel);
           setSidebarDocument(null);
           setSidebarActionItems([]);
         }
@@ -336,42 +624,9 @@ function ChatPageContent() {
     };
   }, [documentId, selectedLanguage.code, sidebarFetchKey]);
 
-  const handleSend = (text?: string) => {
-    const raw = (text ?? inputValue).trim();
-    if (!raw || isBusy || !documentId) return;
-    sendMessage(
-      { text: raw },
-      {
-        body: {
-          documentId,
-          language: selectedLanguage.code,
-        },
-      },
-    );
-    setInputValue("");
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const documentTitle =
-    sidebarDocument?.fileName ?? labels.noDocumentTitle;
+  const documentTitle = sidebarDocument?.fileName ?? labels.noDocumentTitle;
   const documentSubtitle =
-    sidebarDocument?.formDescription ??
-    sidebarDocument?.formType ??
-    "";
-
-  const suggestedQuestions = [
-    labels.suggestQ1,
-    labels.suggestQ2,
-    labels.suggestQ3,
-  ];
-
-  const hasConversation = messages.length > 0 || showTyping;
+    sidebarDocument?.formDescription ?? sidebarDocument?.formType ?? "";
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
@@ -379,6 +634,24 @@ function ChatPageContent() {
 
       <div className={styles.body}>
         <aside className={styles.sidebar}>
+          <div className={styles.sidebarSection}>
+            <ChatHistorySidebar
+              currentSessionId={sessionId ?? null}
+              currentDocumentId={documentId ?? null}
+              currentLanguage={selectedLanguage.code}
+              labels={{
+                heading: labels.yourChats,
+                newChat: labels.newChat,
+                empty: labels.noChats,
+                loading: labels.loadingChats,
+                loadFailed: labels.chatsLoadFailed,
+                deleteConfirm: labels.deleteChatConfirm,
+                deleteAria: labels.deleteChatLabel,
+                untitled: labels.untitledChat,
+              }}
+            />
+          </div>
+
           <div className={styles.sidebarSection}>
             <p className={styles.sidebarEyebrow}>{labels.currentDocument}</p>
             <div className={styles.docCard}>
@@ -463,7 +736,10 @@ function ChatPageContent() {
           ) : null}
 
           <div className={styles.sidebarFooter}>
-            <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.uploadNewBtn}>
+            <Link
+              href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`}
+              className={styles.uploadNewBtn}
+            >
               <IconUpload size={13} aria-hidden />
               {labels.uploadNewDocument}
             </Link>
@@ -483,126 +759,38 @@ function ChatPageContent() {
             <p className={styles.stepBadge}>{labels.stepBadgeLabel}</p>
           </div>
 
-          <div
-            className={styles.messages}
-            aria-busy={isBusy}
-            aria-live="polite"
-          >
-            {!documentId ? (
+          {!documentId ? (
+            <div className={styles.messages}>
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
                   <IconSparkles size={22} stroke={1.5} aria-hidden />
                 </div>
                 <h2 className={styles.emptyHeading}>{labels.noDocumentTitle}</h2>
                 <p className={styles.emptyText}>{labels.noDocumentBody}</p>
-                <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.suggestionBtn}>
+                <Link
+                  href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`}
+                  className={styles.suggestionBtn}
+                >
                   {labels.goUpload}
                   <IconChevronRight size={12} aria-hidden />
                 </Link>
               </div>
-            ) : !hasConversation ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <IconSparkles size={22} stroke={1.5} aria-hidden />
-                </div>
-                <h2 className={styles.emptyHeading}>{labels.emptyHeading}</h2>
-                <p className={styles.emptyText}>{labels.emptySubtext}</p>
-                <div className={styles.suggestions}>
-                  {suggestedQuestions.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className={styles.suggestionBtn}
-                      onClick={() => handleSend(q)}
-                    >
-                      {q}
-                      <IconChevronRight size={12} aria-hidden />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {documentId && hasConversation
-              ? messages.map((m) => (
-                  <MessageBubble
-                    key={m.id}
-                    message={m}
-                    onSuggestionClick={(value) => setInputValue(value)}
-                  />
-                ))
-              : null}
-
-            {documentId && showTyping ? (
-              <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>
-                <div className={styles.bubbleAvatar}>
-                  <IconSparkles size={11} aria-hidden />
-                </div>
-                <div className={styles.typingDots} aria-label={labels.chatWaiting}>
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className={styles.annotationStack}>
-                <div
-                  className={styles.annotationCard}
-                  style={{
-                    borderColor: "#d70015",
-                    background: "#fff2f2",
-                  }}
-                  role="alert"
-                >
-                  <p className={styles.annotationDetail} style={{ color: "#d70015" }}>
-                    {labels.errorChat}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.suggestionBtn}
-                  onClick={() => regenerate()}
-                >
-                  {labels.retry}
-                </button>
-              </div>
-            ) : null}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className={styles.inputArea}>
-            <span className="sr-only">{labels.inputLabel}</span>
-            <div className={styles.inputBox}>
-              <textarea
-                ref={textareaRef}
-                className={styles.textarea}
-                placeholder={
-                  !documentId
-                    ? labels.chatDisabledPlaceholder
-                    : labels.chatPlaceholder
-                }
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                disabled={!documentId || isBusy}
-                aria-label={labels.inputLabel}
-              />
-              <button
-                type="button"
-                className={styles.sendBtn}
-                onClick={() => handleSend()}
-                disabled={!documentId || !inputValue.trim() || isBusy}
-                aria-label="Send message"
-              >
-                <IconArrowUp size={14} aria-hidden />
-              </button>
             </div>
-            <p className={styles.disclaimer}>{labels.footerHint}</p>
-          </div>
+          ) : !sessionId ? (
+            <div className={styles.messages}>
+              <p className={styles.disclaimer} style={{ padding: "var(--space-4)" }}>
+                {labels.loadingDocument}
+              </p>
+            </div>
+          ) : (
+            <ChatThread
+              key={sessionId}
+              sessionId={sessionId}
+              language={selectedLanguage.code}
+              labels={labels}
+              documentId={documentId}
+            />
+          )}
         </div>
       </div>
     </div>
