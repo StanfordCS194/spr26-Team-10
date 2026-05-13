@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { after } from "next/server";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { AiExtractionPayload, ReviewField } from "@/types/review-field";
 import {
   dedupeFieldKeys,
@@ -46,6 +47,18 @@ function inferFormMetadata(fileName: string) {
 
 export async function POST(req: Request) {
   try {
+    // Authenticate via the cookie-aware client; subsequent writes use the
+    // service-role client so action_items and the deferred ai_extraction
+    // update (which runs detached from this request in after()) succeed
+    // regardless of RLS.
+    const cookieSupabase = await createClient();
+    const {
+      data: { user },
+    } = await cookieSupabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file");
     const language = (formData.get("language") as LanguageCode | null) ?? "en";
@@ -54,15 +67,18 @@ export async function POST(req: Request) {
       return Response.json({ error: "Missing upload file" }, { status: 400 });
     }
 
-    const { formType, formDescription, heuristicHint } = inferFormMetadata(file.name);
+    const { formType, formDescription, heuristicHint } = inferFormMetadata(
+      file.name,
+    );
     const fileBuffer = Buffer.from(await file.arrayBuffer());
     const fileMeta = { name: file.name, type: file.type };
 
-    const supabase = createServerSupabase();
+    const supabase = createAdminClient();
 
     const { data: createdDoc, error: docError } = await supabase
       .from("documents")
       .insert({
+        user_id: user.id,
         file_name: file.name,
         form_type: formType,
         form_description: formDescription,
@@ -77,7 +93,7 @@ export async function POST(req: Request) {
           error: "Failed to save uploaded document metadata",
           details: docError?.message,
           hint:
-            "Add SUPABASE_SERVICE_ROLE_KEY to my-app/.env.local (server only), or run sql/04_rls_policies_anon.sql in Supabase.",
+            "Run sql/06_chat_history_user_links.sql and sql/07_rls_user_data.sql in Supabase so authenticated users can insert documents.",
         },
         { status: 500 },
       );
@@ -111,7 +127,7 @@ export async function POST(req: Request) {
     after(async () => {
       try {
         console.log("[upload] after() block started for", documentId);
-        const sb = createServerSupabase();
+        const sb = createAdminClient();
         let documentSummary: string;
         let reviewFields: ReviewField[];
 
