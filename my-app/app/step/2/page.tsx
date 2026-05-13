@@ -211,22 +211,9 @@ function ReviewStepInner() {
   }, [loadState, documentId, reviewFields.length]);
 
   const steps: Step[] = [
-    {
-      number: 1,
-      title: "Upload your document",
-      description:
-        "Any government form: PDF, photo, or scan. We handle the rest.",
-    },
-    {
-      number: 2,
-      title: "Review the extraction",
-      description: "Confirm what we read before you ask questions.",
-    },
-    {
-      number: 3,
-      title: "Ask anything",
-      description: "Questions answered clearly, in your language.",
-    },
+    { number: 1, title: rv.step1Title, description: rv.step1Desc },
+    { number: 2, title: rv.step2Title, description: rv.step2Desc },
+    { number: 3, title: rv.step3Title, description: rv.step3Desc },
   ];
 
   const toggleConfirm = useCallback((key: string) => {
@@ -260,7 +247,7 @@ function ReviewStepInner() {
   if (loadState === "loading" || !documentId) {
     return (
       <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-        <AppNav backLabel="Back to home" backTo="/" />
+        <AppNav backLabel={rv.navBack} backTo="/" />
         <PageSplit
           left={
             <StepSidebar
@@ -287,7 +274,7 @@ function ReviewStepInner() {
   if (loadState === "error") {
     return (
       <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-        <AppNav backLabel="Back to home" backTo="/" />
+        <AppNav backLabel={rv.navBack} backTo="/" />
         <PageSplit
           left={
             <StepSidebar
@@ -326,7 +313,7 @@ function ReviewStepInner() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={reviewStyles.page}>
-      <AppNav backLabel="Back to home" backTo="/" />
+      <AppNav backLabel={rv.navBack} backTo="/" />
       <PageSplit
         left={
           <StepSidebar

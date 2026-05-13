@@ -67,6 +67,7 @@ type UiLabels = {
   suggestQ1: string;
   suggestQ2: string;
   suggestQ3: string;
+  navBack: string;
 };
 
 const uiLabels: Record<LanguageOption["code"], UiLabels> = {
@@ -102,6 +103,7 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "What documents do I need to gather?",
     suggestQ2: "What does this line mean?",
     suggestQ3: "Can I file an extension?",
+    navBack: "Back to home", 
   },
   es: {
     subtitle: "Lenguaje claro. Tu idioma. Sin jerga.",
@@ -135,6 +137,7 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "¿Qué documentos necesito reunir?",
     suggestQ2: "¿Qué significa esta línea?",
     suggestQ3: "¿Puedo pedir una prórroga?",
+    navBack: "Volver al inicio", 
   },
   zh: {
     subtitle: "清晰易懂。用你的语言。没有术语障碍。",
@@ -165,6 +168,7 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "我需要准备哪些材料？",
     suggestQ2: "这一栏是什么意思？",
     suggestQ3: "我可以申请延期吗？",
+    navBack: "返回主页", 
   },
   ar: {
     subtitle: "لغة واضحة. لغتك. بلا مصطلحات معقدة.",
@@ -196,6 +200,7 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "ما المستندات التي أحتاجها؟",
     suggestQ2: "ماذا يعني هذا السطر؟",
     suggestQ3: "هل يمكنني طلب تمديد؟",
+    navBack: "العودة إلى الرئيسية", 
   },
   fr: {
     subtitle: "Langage simple. Votre langue. Pas de jargon.",
@@ -230,6 +235,7 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "Quels documents dois-je rassembler ?",
     suggestQ2: "Que signifie cette ligne ?",
     suggestQ3: "Puis-je demander une prolongation ?",
+    navBack: "Retour à l'accueil", 
   },
 };
 
@@ -375,7 +381,7 @@ function ChatPageContent() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
-      <AppNav backLabel="Back to home" backTo="/" />
+      <AppNav backLabel={labels.navBack} backTo="/" />
 
       <div className={styles.body}>
         <aside className={styles.sidebar}>
