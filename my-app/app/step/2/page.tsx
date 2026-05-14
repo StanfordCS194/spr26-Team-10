@@ -17,6 +17,7 @@ import {
   IconMapPin,
   IconCalendar,
   IconCurrencyDollar,
+  IconLoader2,
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
 import { StepSidebar, type Step } from "@/components/step-flow/step-sidebar/step-sidebar";
@@ -27,7 +28,6 @@ import { reviewLabels } from "@/lib/review-labels";
 import { resolveLanguageForStep } from "@/lib/language-preference";
 import reviewStyles from "../review-step.module.css";
 
-const EXTRACTION_KEY = "extraction";
 
 const ICONS: Record<
   ReviewFieldIcon,
@@ -82,6 +82,16 @@ function FieldValue({ text }: { text: string }) {
   return <p className={reviewStyles.fieldValue}>{text}</p>;
 }
 
+function ExtractionSpinner({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "var(--space-4) 0", color: "var(--color-text-secondary)", fontSize: "var(--text-sm)" }}>
+      <IconLoader2 size={16} style={{ animation: "spin 1s linear infinite" }} aria-hidden />
+      {label}
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 function ReviewStepInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -103,6 +113,8 @@ function ReviewStepInner() {
   const [documentPreview, setDocumentPreview] = useState("");
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+  const [extracting, setExtracting] = useState(true);
+
 
   const isRtl = selectedLanguage.code === "ar";
   const rv = reviewLabels[selectedLanguage.code];
@@ -120,6 +132,7 @@ function ReviewStepInner() {
     async function load() {
       setLoadState("loading");
       setLoadError("");
+      setExtracting(true);
       try {
         const response = await fetch(`/api/documents/${encodeURIComponent(docId)}`);
         const data = (await response.json()) as {
@@ -148,6 +161,7 @@ function ReviewStepInner() {
         setConfirmed({});
         setFlagged({});
         setLoadState("ready");
+        if (normalizeReviewFields(doc.reviewFields).length > 0) setExtracting(false);
       } catch (e) {
         if (!cancelled) {
           setLoadError(
@@ -159,7 +173,8 @@ function ReviewStepInner() {
     }
 
     void load();
-
+    
+    console.log("[render] extracting:", extracting, "fields:", reviewFields.length);
     return () => {
       cancelled = true;
     };
@@ -167,8 +182,8 @@ function ReviewStepInner() {
 
   /** AI review rows are written shortly after upload via `after()`; poll until they appear. */
   useEffect(() => {
-    if (loadState !== "ready" || !documentId || reviewFields.length > 0) return;
-
+    if (loadState !== "ready" || !documentId) return;
+    if (reviewFields.length > 0) { setExtracting(false); return; }
     let cancelled = false;
     let attempts = 0;
     const maxAttempts = 28;
@@ -195,8 +210,12 @@ function ReviewStepInner() {
           setDocumentPreview((prev) => (text.length > prev.length ? text : prev));
         }
         const next = normalizeReviewFields(data.document.reviewFields);
+        console.log("[poll] next fields length:", next.length); // add this
+
         if (next.length > 0) {
+          console.log("[poll] setting fields and extracting=false");
           setReviewFields(next);
+          setExtracting(false);
           window.clearInterval(id);
         }
       } catch {
@@ -239,23 +258,10 @@ function ReviewStepInner() {
     setConfirmed((prev) => ({ ...prev, [key]: false }));
   }, []);
 
-  const previewText =
-    documentPreview.trim() ||
-    "We could not show a preview. You can still confirm to continue, or go back and try another file.";
+  
+  const rowsForUi = reviewFields;
 
-  const rowsForUi = useMemo((): ReviewField[] => {
-    if (reviewFields.length > 0) return reviewFields;
-    return [
-      {
-        key: EXTRACTION_KEY,
-        label: rv.fieldLabel,
-        value: previewText,
-        icon: "file",
-      },
-    ];
-  }, [reviewFields, rv.fieldLabel, previewText]);
-
-  const allRowsConfirmed = rowsForUi.every((row) => !!confirmed[row.key]);
+  const allRowsConfirmed = !extracting && rowsForUi.length > 0 && rowsForUi.every((row) => !!confirmed[row.key]);
 
   if (loadState === "loading" || !documentId) {
     return (
@@ -353,6 +359,9 @@ function ReviewStepInner() {
               </div>
             </div>
 
+            {extracting ? (
+              <ExtractionSpinner label="Reading your document…" />
+            ) : (
             <div className={reviewStyles.fieldList}>
               {rowsForUi.map((row) => {
                 const Icon = ICONS[row.icon] ?? IconFileText;
@@ -396,10 +405,11 @@ function ReviewStepInner() {
                 );
               })}
             </div>
+            )}
 
-            {!allRowsConfirmed ? (
+            {!extracting && (!allRowsConfirmed ? (
               <p className={reviewStyles.hint}>{rv.hint}</p>
-            ) : null}
+            ) : null)}
 
             <div className={reviewStyles.actions}>
               <button
