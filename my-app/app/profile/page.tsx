@@ -16,6 +16,15 @@ function formatDate(value: string | undefined): string {
   }
 }
 
+type RecentChatRow = {
+  id: string;
+  document_id: string | null;
+  title: string | null;
+  language: string;
+  updated_at: string;
+  documents: { file_name: string | null } | null;
+};
+
 export default async function ProfilePage() {
   const supabase = await createClient();
   const {
@@ -29,6 +38,28 @@ export default async function ProfilePage() {
   const fullName =
     (user.user_metadata?.full_name as string | undefined) ?? null;
   const initial = (fullName ?? user.email ?? "?").trim().charAt(0).toUpperCase();
+
+  const { data: chatRows } = await supabase
+    .from("chat_sessions")
+    .select("id, document_id, title, language, updated_at, documents(file_name)")
+    .order("updated_at", { ascending: false })
+    .limit(3);
+
+  const recentChats = ((chatRows ?? []) as unknown as RecentChatRow[]).map(
+    (row) => ({
+      id: row.id,
+      title: row.title?.trim() || "Untitled chat",
+      documentName: row.documents?.file_name ?? null,
+      documentId: row.document_id,
+      language: row.language,
+      updatedAt: row.updated_at,
+      href: `/step/3?${new URLSearchParams({
+        ...(row.document_id ? { documentId: row.document_id } : {}),
+        sessionId: row.id,
+        language: row.language || "en",
+      }).toString()}`,
+    }),
+  );
 
   return (
     <main className="min-h-screen bg-[var(--cream)] px-4 py-8 sm:px-6 sm:py-12">
@@ -91,6 +122,46 @@ export default async function ProfilePage() {
               Back to dashboard
             </Link>
           </div>
+        </section>
+
+        <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[var(--navy)] sm:text-xl">
+              Recent chats
+            </h2>
+            <Link
+              href="/step/3"
+              className="text-sm font-medium text-[var(--coral)] hover:underline"
+            >
+              Open chat
+            </Link>
+          </div>
+
+          {recentChats.length === 0 ? (
+            <p className="mt-3 text-sm text-gray-500">
+              You haven&apos;t started any chats yet. Upload a form to begin.
+            </p>
+          ) : (
+            <ul className="mt-4 flex flex-col gap-2">
+              {recentChats.map((chat) => (
+                <li key={chat.id}>
+                  <Link
+                    href={chat.href}
+                    className="flex flex-col gap-1 rounded-2xl border border-[#efe6df] bg-[#fbf8f5] px-4 py-3 transition hover:border-[var(--coral)] hover:bg-[#fff5f2]"
+                  >
+                    <span className="truncate text-sm font-semibold text-[var(--navy)]">
+                      {chat.title}
+                    </span>
+                    <span className="truncate text-xs text-gray-500">
+                      {[chat.documentName, formatDate(chat.updatedAt)]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
     </main>

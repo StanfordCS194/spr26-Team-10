@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createClient } from "@supabase/supabase-js";
 
 function trimEnv(value: string | undefined): string | undefined {
@@ -14,11 +16,14 @@ function normalizeSecretKey(value: string | undefined): string | undefined {
 }
 
 /**
- * Supabase client for Route Handlers and server-only code.
- * Prefer SUPABASE_SERVICE_ROLE_KEY so inserts/selects work when RLS has no anon policies.
- * Never expose the service role key to the browser (do not prefix with NEXT_PUBLIC_).
+ * Service-role Supabase client for server-only writes that need to bypass RLS
+ * (e.g. seeding action_items during upload before the document is fully owned
+ * by the user). Falls back to the anon key if no service role key is set.
+ *
+ * Never import this from the browser, and never expose the service role key
+ * via a NEXT_PUBLIC_ prefix.
  */
-export function createServerSupabase() {
+export function createAdminClient() {
   const url = trimEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const serviceKey = normalizeSecretKey(process.env.SUPABASE_SERVICE_ROLE_KEY);
   const anonKey = trimEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
