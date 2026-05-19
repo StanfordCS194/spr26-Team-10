@@ -21,6 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
 import MessageBubble from "@/app/chat/MessageBubble";
+import type { ChatUIMessage } from "@/app/api/chat/route";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "@/app/chat/chat-panel.module.css";
@@ -274,10 +275,11 @@ function ChatPageContent() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, status, error, regenerate } = useChat({
-    messages: [],
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
+  const { messages, sendMessage, status, error, regenerate } =
+    useChat<ChatUIMessage>({
+      messages: [],
+      transport: new DefaultChatTransport({ api: "/api/chat" }),
+    });
 
   const isBusy = status === "submitted" || status === "streaming";
   const showTyping = isBusy;
@@ -529,6 +531,7 @@ function ChatPageContent() {
                     key={m.id}
                     message={m}
                     onSuggestionClick={(value) => setInputValue(value)}
+                    citations={m.metadata?.sources}
                   />
                 ))
               : null}

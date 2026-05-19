@@ -1,9 +1,10 @@
-import type { UIMessage } from "ai";
 import { IconChevronRight, IconSparkles } from "@tabler/icons-react";
+import type { ChatUIMessage } from "@/app/api/chat/route";
+import type { CitationSource } from "@/lib/citations";
 import { messageMeta } from "./messages";
 import styles from "./chat-panel.module.css";
 
-function getText(message: UIMessage): string {
+function getText(message: ChatUIMessage): string {
   return message.parts
     .filter((part) => part.type === "text")
     .map((part) => part.text)
@@ -13,9 +14,11 @@ function getText(message: UIMessage): string {
 export default function MessageBubble({
   message,
   onSuggestionClick,
+  citations,
 }: {
-  message: UIMessage;
+  message: ChatUIMessage;
   onSuggestionClick?: (value: string) => void;
+  citations?: CitationSource[];
 }) {
   const text = getText(message);
   const meta = messageMeta[message.id];
@@ -63,9 +66,32 @@ export default function MessageBubble({
             ))}
           </div>
         ) : null}
-
-        {meta?.citation ? (
-          <div className={styles.citationPill}>Source: {meta.citation}</div>
+        {citations && citations.length > 0 ? (
+          <div className={styles.citationList}>
+            <span className={styles.citationLabel}>
+              {citations.length === 1 ? "Source:" : "Sources:"}
+            </span>
+            {citations.map((c) =>
+              c.href ? (
+                <a
+                  key={c.id ?? c.source}
+                  href={c.href}
+                  className={styles.citationChip}
+                  title={c.snippet}
+                >
+                  {c.label || c.source}
+                </a>
+              ) : (
+                <span
+                  key={c.source}
+                  className={styles.citationChip}
+                  title={c.snippet}
+                >
+                  {c.label || c.source}
+                </span>
+              ),
+            )}
+          </div>
         ) : null}
       </div>
     </div>
