@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/StanfordCS194/spr26-Team-10#readme",
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "pdf2json": "^4.0.3",
     "playwright": "^1.59.1"
   },
   "devDependencies": {
