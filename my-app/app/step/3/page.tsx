@@ -2,6 +2,7 @@
 
 import {
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -16,8 +17,10 @@ import {
   IconChevronRight,
   IconCircleDot,
   IconFileText,
+  IconLayoutSidebarRightExpand,
   IconSparkles,
   IconUpload,
+  IconX,
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
 import MessageBubble from "@/app/chat/MessageBubble";
@@ -37,6 +40,7 @@ type SidebarDocument = {
   fileName: string;
   formType: string | null;
   formDescription: string | null;
+  fileUrl: string | null;
 };
 
 type UiLabels = {
@@ -239,6 +243,46 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
   },
 };
 
+function useResizeHandle(
+  getSize: () => number,
+  setSize: (n: number) => void,
+  min: number,
+  max: number,
+) {
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startSize = useRef(0);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startX.current = e.clientX;
+      startSize.current = getSize();
+      setIsResizing(true);
+
+      const onMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        const delta = ev.clientX - startX.current;
+        setSize(Math.min(max, Math.max(min, startSize.current + delta)));
+      };
+      const onUp = () => {
+        dragging.current = false;
+        setIsResizing(false);
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [min, max],
+  );
+
+  return { onMouseDown, isResizing };
+}
+
 function SidebarDocSkeleton() {
   return (
     <div className={styles.annotationStack} aria-hidden>
@@ -267,12 +311,22 @@ function ChatPageContent() {
   const [inputValue, setInputValue] = useState("");
   const [sidebarDocument, setSidebarDocument] =
     useState<SidebarDocument | null>(null);
+  const [showDocViewer, setShowDocViewer] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [docViewerWidth, setDocViewerWidth] = useState(480);
   const [sidebarActionItems, setSidebarActionItems] = useState<
     SidebarActionItem[]
   >([]);
   const [sidebarError, setSidebarError] = useState("");
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarFetchKey, setSidebarFetchKey] = useState(0);
+
+  const sidebarResize = useResizeHandle(
+    () => sidebarWidth, setSidebarWidth, 180, 480,
+  );
+  const docViewerResize = useResizeHandle(
+    () => docViewerWidth, setDocViewerWidth, 200, 900,
+  );
 
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
@@ -320,7 +374,10 @@ function ChatPageContent() {
         }
 
         if (!cancelled) {
-          setSidebarDocument(data.document);
+          setSidebarDocument({
+            ...data.document,
+            fileUrl: (data.document as SidebarDocument & { fileUrl?: string | null }).fileUrl ?? null,
+          });
           setSidebarActionItems(data.actionItems ?? []);
         }
       } catch (e) {
@@ -384,7 +441,7 @@ function ChatPageContent() {
       <AppNav backLabel={labels.navBack} backTo="/" />
 
       <div className={styles.body}>
-        <aside className={styles.sidebar}>
+        <aside className={styles.sidebar} style={{ width: sidebarWidth }}>
           <div className={styles.sidebarSection}>
             <p className={styles.sidebarEyebrow}>{labels.currentDocument}</p>
             <div className={styles.docCard}>
@@ -413,6 +470,15 @@ function ChatPageContent() {
               >
                 {labels.goUpload}
               </Link>
+            ) : sidebarDocument?.fileUrl ? (
+              <button
+                type="button"
+                className={styles.viewFormBtn}
+                onClick={() => setShowDocViewer((v) => !v)}
+              >
+                <IconLayoutSidebarRightExpand size={13} aria-hidden />
+                {showDocViewer ? "Hide form" : "View form"}
+              </button>
             ) : null}
           </div>
 
@@ -475,6 +541,54 @@ function ChatPageContent() {
             </Link>
           </div>
         </aside>
+
+        <div
+          className={`${styles.resizeHandle}${sidebarResize.isResizing ? ` ${styles.resizing}` : ""}`}
+          onMouseDown={sidebarResize.onMouseDown}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+        />
+
+        {showDocViewer && sidebarDocument?.fileUrl ? (
+          <>
+            <div className={styles.docViewer} style={{ width: docViewerWidth }}>
+              <div className={styles.docViewerHeader}>
+                <span className={styles.docViewerTitle}>{sidebarDocument.fileName}</span>
+                <button
+                  type="button"
+                  className={styles.docViewerClose}
+                  onClick={() => setShowDocViewer(false)}
+                  aria-label="Close form viewer"
+                >
+                  <IconX size={14} aria-hidden />
+                </button>
+              </div>
+              <div className={styles.docViewerBody}>
+                {sidebarDocument.fileName.toLowerCase().endsWith(".pdf") ? (
+                  <iframe
+                    src={sidebarDocument.fileUrl}
+                    className={styles.docViewerFrame}
+                    title={sidebarDocument.fileName}
+                  />
+                ) : (
+                  <img
+                    src={sidebarDocument.fileUrl}
+                    alt={sidebarDocument.fileName}
+                    className={styles.docViewerImage}
+                  />
+                )}
+              </div>
+            </div>
+            <div
+              className={`${styles.resizeHandle}${docViewerResize.isResizing ? ` ${styles.resizing}` : ""}`}
+              onMouseDown={docViewerResize.onMouseDown}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize form viewer"
+            />
+          </>
+        ) : null}
 
         <div className={styles.chatPanel}>
           <div className={styles.chatHeader}>
