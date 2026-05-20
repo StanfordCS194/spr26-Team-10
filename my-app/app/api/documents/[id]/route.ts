@@ -67,6 +67,14 @@ export async function GET(
       ? extraction!.fields
       : [];
 
+    let fileUrl: string | null = null;
+    if (document.storage_path) {
+      const { data: signed } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(document.storage_path, 3600);
+      fileUrl = signed?.signedUrl ?? null;
+    }
+
     return Response.json({
       document: {
         id: document.id,
@@ -76,6 +84,7 @@ export async function GET(
         reviewFields,
         documentText:
           typeof document.ocr_text === "string" ? document.ocr_text : "",
+        fileUrl,
       },
       actionItems: (actionItems ?? []).map((item) => ({
         id: item.id,
