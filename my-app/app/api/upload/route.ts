@@ -106,6 +106,23 @@ export async function POST(req: Request) {
 
     await supabase.from("action_items").insert(actionItems);
 
+    // Upload the original file to Supabase Storage so users can view it later
+    const storageKey = `${createdDoc.id}/${file.name}`;
+    const { error: storageError } = await supabase.storage
+      .from("documents")
+      .upload(storageKey, fileBuffer, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+    if (storageError) {
+      console.warn("[upload] storage upload failed:", storageError.message);
+    } else {
+      await supabase
+        .from("documents")
+        .update({ storage_path: storageKey })
+        .eq("id", createdDoc.id);
+    }
+
     const documentId = createdDoc.id;
 
     after(async () => {
