@@ -110,6 +110,7 @@ export async function POST(req: Request) {
 
     after(async () => {
       try {
+        console.log("[upload] after() block started for", documentId);
         const sb = createServerSupabase();
         let documentSummary: string;
         let reviewFields: ReviewField[];
@@ -125,6 +126,7 @@ export async function POST(req: Request) {
           });
           documentSummary = extracted.documentSummary;
           reviewFields = extracted.fields;
+          console.log("[upload] LLM extraction succeeded for", documentId);
         } catch (e) {
           console.warn("[upload] LLM extraction failed (after), using heuristics only:", e);
           documentSummary = heuristicHint;
@@ -166,6 +168,8 @@ export async function POST(req: Request) {
 
         if (updateErr) {
           console.warn("[upload] document update failed (after):", updateErr.message);
+        } else {
+          console.log("[upload] extraction complete for", documentId);
         }
       } catch (e) {
         console.warn("[upload] deferred pipeline failed (after):", e);
