@@ -5,6 +5,7 @@ import type { AiExtractionPayload, ReviewField } from "@/types/review-field";
 import {
   dedupeFieldKeys,
   extractDocumentAndReviewFromUpload,
+  type ActionItemInput,
 } from "@/lib/upload-llm-extraction";
 
 export const runtime = "nodejs";
@@ -83,29 +84,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const actionItems = [
-      {
-        document_id: createdDoc.id,
-        title: "Gather Required Documents",
-        detail: "Copy of passport, visa, I-94",
-        sort_order: 1,
-      },
-      {
-        document_id: createdDoc.id,
-        title: "Filing Fee",
-        detail: "$410 (check or money order)",
-        sort_order: 2,
-      },
-      {
-        document_id: createdDoc.id,
-        title: "Deadline",
-        detail: "Submit before June 15, 2026",
-        sort_order: 3,
-      },
-    ];
-
-    await supabase.from("action_items").insert(actionItems);
-
     const documentId = createdDoc.id;
 
     after(async () => {
@@ -114,6 +92,7 @@ export async function POST(req: Request) {
         const sb = createServerSupabase();
         let documentSummary: string;
         let reviewFields: ReviewField[];
+        let actionItems: ActionItemInput[] = [];
 
         try {
           const extracted = await extractDocumentAndReviewFromUpload({
@@ -126,6 +105,7 @@ export async function POST(req: Request) {
           });
           documentSummary = extracted.documentSummary;
           reviewFields = extracted.fields;
+          actionItems = extracted.actionItems;
           console.log("[upload] LLM extraction succeeded for", documentId);
         } catch (e) {
           console.warn("[upload] LLM extraction failed (after), using heuristics only:", e);
@@ -170,6 +150,21 @@ export async function POST(req: Request) {
           console.warn("[upload] document update failed (after):", updateErr.message);
         } else {
           console.log("[upload] extraction complete for", documentId);
+        }
+
+        if (actionItems.length > 0) {
+          const rows = actionItems.map((item, i) => ({
+            document_id: documentId,
+            title: item.title,
+            detail: item.detail,
+            sort_order: i + 1,
+          }));
+          const { error: aiErr } = await sb.from("action_items").insert(rows);
+          if (aiErr) {
+            console.warn("[upload] action items insert failed:", aiErr.message);
+          } else {
+            console.log("[upload] inserted", rows.length, "action items for", documentId);
+          }
         }
       } catch (e) {
         console.warn("[upload] deferred pipeline failed (after):", e);
