@@ -271,6 +271,17 @@ function ReviewStepInner() {
     setFlagged((prev) => ({ ...prev, [key]: false }));
   }, []);
 
+  const confirmAll = useCallback(() => {
+    const allConfirmed: Record<string, boolean> = {};
+    const allUnflagged: Record<string, boolean> = {};
+    reviewFields.forEach((row) => {
+      allConfirmed[row.key] = true;
+      allUnflagged[row.key] = false;
+    });
+    setConfirmed(allConfirmed);
+    setFlagged(allUnflagged);
+  }, [reviewFields]);
+
   
   const rowsForUi = reviewFields;
 
@@ -375,6 +386,19 @@ function ReviewStepInner() {
             {extracting ? (
               <ExtractionSpinner label="Reading your document…" />
             ) : (
+            <>
+            {!allRowsConfirmed && rowsForUi.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-2)" }}>
+                <button
+                  type="button"
+                  onClick={confirmAll}
+                  className={reviewStyles.confirmAllBtn}
+                >
+                  <IconCheck size={13} aria-hidden />
+                  Confirm all
+                </button>
+              </div>
+            )}
             <div className={reviewStyles.fieldList}>
               {rowsForUi.map((row) => {
                 const Icon = ICONS[row.icon] ?? IconFileText;
@@ -473,6 +497,7 @@ function ReviewStepInner() {
                 );
               })}
             </div>
+            </>
             )}
 
             {!extracting && (!allRowsConfirmed ? (
