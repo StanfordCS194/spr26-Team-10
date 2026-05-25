@@ -48,18 +48,18 @@ const extractionSchema = z.object({
   actionItems: z
     .array(
       z.object({
-        title: z.string().describe("Short imperative title (3–5 words), e.g. 'Gather Required Documents'"),
+        title: z.string().describe("Short imperative action title (3–5 words)"),
         detail: z
           .string()
           .describe(
-            "One to two sentences with explicit, form-specific detail. Name exact documents, exact dollar amounts, exact addresses or portal URLs, exact dates. Never use vague language like 'appropriate documents' or 'check the website'.",
+            "One to two sentences with explicit, form-specific detail. Name exact documents, exact dollar amounts, exact addresses or portal URLs, exact dates.",
           ),
       }),
     )
     .min(2)
     .max(5)
     .describe(
-      "Highly specific next steps for this exact form. Each item must name specific documents, fees, addresses, or deadlines — not general advice.",
+      "Concrete next steps for this exact form: required documents (list them by name), fees (exact amounts), where to submit, deadlines. Write title and detail in the same language as the fields.",
     ),
 });
 
