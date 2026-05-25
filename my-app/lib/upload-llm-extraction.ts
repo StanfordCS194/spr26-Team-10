@@ -150,6 +150,15 @@ export async function extractDocumentAndReviewFromUpload(input: {
     "- Summarize what the document is and key visible requirements or sections.",
     "- Never invent real PII; quote only what is clearly visible.",
     "",
+    "actionItems: 2 to 5 concrete next steps. Each must be highly specific to this exact form — not generic.",
+    "Rules:",
+    "- 'Gather Required Documents' must name the EXACT documents required for this specific form (e.g. for I-765: '2 passport-style photos, copy of I-94, copy of current visa stamp, copy of any prior EAD, and supporting eligibility docs such as Form I-20 or I-797'). Never say 'gather identification' — list the actual items.",
+    "- 'Filing Fee' must state the exact dollar amount if visible or known (e.g. '$520 by check or money order payable to U.S. Department of Homeland Security'). If you cannot confirm the fee, say to verify on the official agency website and name the website.",
+    "- 'Where to Submit' must give the specific mailing address, portal URL, or office name — not just 'mail to USCIS'.",
+    "- For any deadline mentioned in the document, state it explicitly with the date or timeframe.",
+    "- Include a warning for the single most common mistake applicants make on this specific form (e.g. for I-765: 'Do not leave Part 2 eligibility category blank — incorrect or missing category is the #1 rejection reason').",
+    "NEVER write vague items like 'Prepare documents', 'Check the website', or 'Follow instructions'. Every detail must be stated explicitly.",
+    "",
     "If the file was not attached (too large or unsupported type), infer only from the hints and say clearly that the file could not be read.",
   ].join("\n");
 

@@ -114,6 +114,8 @@ function ReviewStepInner() {
   const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
   const [extracting, setExtracting] = useState(true);
+  const [editing, setEditing] = useState<Record<string, boolean>>({});
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
 
 
   const isRtl = selectedLanguage.code === "ar";
@@ -238,11 +240,35 @@ function ReviewStepInner() {
   const toggleConfirm = useCallback((key: string) => {
     setConfirmed((prev) => ({ ...prev, [key]: !prev[key] }));
     setFlagged((prev) => ({ ...prev, [key]: false }));
+    setEditing((prev) => ({ ...prev, [key]: false }));
   }, []);
 
-  const toggleFlag = useCallback((key: string) => {
-    setFlagged((prev) => ({ ...prev, [key]: !prev[key] }));
-    setConfirmed((prev) => ({ ...prev, [key]: false }));
+  const toggleFlag = useCallback((key: string, currentValue: string) => {
+    const isCurrentlyEditing = editing[key];
+    if (isCurrentlyEditing) {
+      setEditing((prev) => ({ ...prev, [key]: false }));
+      setFlagged((prev) => ({ ...prev, [key]: false }));
+    } else {
+      setEditing((prev) => ({ ...prev, [key]: true }));
+      setEditValues((prev) => ({ ...prev, [key]: currentValue }));
+      setFlagged((prev) => ({ ...prev, [key]: true }));
+      setConfirmed((prev) => ({ ...prev, [key]: false }));
+    }
+  }, [editing]);
+
+  const saveEdit = useCallback((key: string) => {
+    const newValue = editValues[key] ?? "";
+    setReviewFields((prev) =>
+      prev.map((row) => (row.key === key ? { ...row, value: newValue } : row)),
+    );
+    setEditing((prev) => ({ ...prev, [key]: false }));
+    setFlagged((prev) => ({ ...prev, [key]: false }));
+    setConfirmed((prev) => ({ ...prev, [key]: true }));
+  }, [editValues]);
+
+  const cancelEdit = useCallback((key: string) => {
+    setEditing((prev) => ({ ...prev, [key]: false }));
+    setFlagged((prev) => ({ ...prev, [key]: false }));
   }, []);
 
   const rowsForUi = reviewFields;
@@ -348,11 +374,25 @@ function ReviewStepInner() {
             {extracting ? (
               <ExtractionSpinner label="Reading your document…" />
             ) : (
+            <>
+            {!allRowsConfirmed && rowsForUi.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "var(--space-2)" }}>
+                <button
+                  type="button"
+                  onClick={confirmAll}
+                  className={reviewStyles.confirmAllBtn}
+                >
+                  <IconCheck size={13} aria-hidden />
+                  Confirm all
+                </button>
+              </div>
+            )}
             <div className={reviewStyles.fieldList}>
               {rowsForUi.map((row) => {
                 const Icon = ICONS[row.icon] ?? IconFileText;
                 const isConfirmed = !!confirmed[row.key];
                 const isFlagged = !!flagged[row.key];
+                const isEditing = !!editing[row.key];
                 return (
                   <div
                     key={row.key}
@@ -363,7 +403,62 @@ function ReviewStepInner() {
                     </div>
                     <div className={reviewStyles.fieldContent}>
                       <p className={reviewStyles.fieldLabel}>{row.label}</p>
-                      <FieldValue text={row.value} />
+                      {isEditing ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginTop: "var(--space-1)" }}>
+                          <textarea
+                            value={editValues[row.key] ?? row.value}
+                            onChange={(e) =>
+                              setEditValues((prev) => ({ ...prev, [row.key]: e.target.value }))
+                            }
+                            rows={3}
+                            style={{
+                              width: "100%",
+                              fontSize: "var(--text-sm)",
+                              padding: "var(--space-2)",
+                              border: "1.5px solid var(--color-border-focus, #0071e3)",
+                              borderRadius: "6px",
+                              resize: "vertical",
+                              fontFamily: "inherit",
+                              lineHeight: 1.5,
+                            }}
+                            autoFocus
+                          />
+                          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                            <button
+                              type="button"
+                              onClick={() => saveEdit(row.key)}
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                padding: "2px 10px",
+                                borderRadius: "5px",
+                                border: "none",
+                                background: "#0071e3",
+                                color: "#fff",
+                                cursor: "pointer",
+                                fontWeight: 500,
+                              }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => cancelEdit(row.key)}
+                              style={{
+                                fontSize: "var(--text-xs)",
+                                padding: "2px 10px",
+                                borderRadius: "5px",
+                                border: "1px solid var(--color-border)",
+                                background: "transparent",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <FieldValue text={row.value} />
+                      )}
                     </div>
                     <div className={reviewStyles.fieldActions}>
                       <button
@@ -372,17 +467,16 @@ function ReviewStepInner() {
                         onClick={() => toggleConfirm(row.key)}
                         aria-label={isConfirmed ? "Unconfirm" : "Confirm"}
                         title="Looks correct"
+                        disabled={isEditing}
                       >
                         <IconCheck size={13} aria-hidden />
                       </button>
                       <button
                         type="button"
                         className={`${reviewStyles.iconBtn} ${isFlagged ? reviewStyles.iconBtnFlagged : ""}`}
-                        onClick={() => toggleFlag(row.key)}
-                        aria-label={
-                          isFlagged ? "Unflag" : "Flag as incorrect"
-                        }
-                        title="Something looks off"
+                        onClick={() => toggleFlag(row.key, row.value)}
+                        aria-label={isEditing ? "Cancel edit" : isFlagged ? "Unflag" : "Fix this value"}
+                        title={isEditing ? "Cancel edit" : "Fix this value"}
                       >
                         <IconAlertCircle size={13} aria-hidden />
                       </button>
@@ -391,6 +485,7 @@ function ReviewStepInner() {
                 );
               })}
             </div>
+            </>
             )}
 
             {!extracting && (!allRowsConfirmed ? (
