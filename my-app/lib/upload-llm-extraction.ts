@@ -45,6 +45,22 @@ const extractionSchema = z.object({
     )
     .min(3)
     .max(7),
+  actionItems: z
+    .array(
+      z.object({
+        title: z.string().describe("Short imperative title (3–5 words), e.g. 'Gather Required Documents'"),
+        detail: z
+          .string()
+          .describe(
+            "One to two sentences with explicit, form-specific detail. Name exact documents, exact dollar amounts, exact addresses or portal URLs, exact dates. Never use vague language like 'appropriate documents' or 'check the website'.",
+          ),
+      }),
+    )
+    .min(2)
+    .max(5)
+    .describe(
+      "Highly specific next steps for this exact form. Each item must name specific documents, fees, addresses, or deadlines — not general advice.",
+    ),
 });
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -96,6 +112,8 @@ export function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
  * One multimodal LLM call: reads the uploaded file (PDF or image) and returns
  * stored document summary text plus structured review rows for step 2.
  */
+export type ActionItemInput = { title: string; detail: string };
+
 export async function extractDocumentAndReviewFromUpload(input: {
   buffer: Buffer;
   meta: UploadFileMeta;
@@ -103,7 +121,7 @@ export async function extractDocumentAndReviewFromUpload(input: {
   formType: string;
   formDescription: string;
   heuristicHint: string;
-}): Promise<{ documentSummary: string; fields: ReviewField[] }> {
+}): Promise<{ documentSummary: string; fields: ReviewField[]; actionItems: ActionItemInput[] }> {
   const key = process.env.OPENAI_API_KEY?.trim();
   if (!key) {
     throw new Error("Missing OPENAI_API_KEY for document extraction");
@@ -131,6 +149,15 @@ export async function extractDocumentAndReviewFromUpload(input: {
     "- Plain language, for chat context.",
     "- Summarize what the document is and key visible requirements or sections.",
     "- Never invent real PII; quote only what is clearly visible.",
+    "",
+    "actionItems: 2 to 5 concrete next steps. Each must be highly specific to this exact form — not generic.",
+    "Rules:",
+    "- 'Gather Required Documents' must name the EXACT documents required for this specific form (e.g. for I-765: '2 passport-style photos, copy of I-94, copy of current visa stamp, copy of any prior EAD, and supporting eligibility docs such as Form I-20 or I-797'). Never say 'gather identification' — list the actual items.",
+    "- 'Filing Fee' must state the exact dollar amount if visible or known (e.g. '$520 by check or money order payable to U.S. Department of Homeland Security'). If you cannot confirm the fee, say to verify on the official agency website and name the website.",
+    "- 'Where to Submit' must give the specific mailing address, portal URL, or office name — not just 'mail to USCIS'.",
+    "- For any deadline mentioned in the document, state it explicitly with the date or timeframe.",
+    "- Include a warning for the single most common mistake applicants make on this specific form (e.g. for I-765: 'Do not leave Part 2 eligibility category blank — incorrect or missing category is the #1 rejection reason').",
+    "NEVER write vague items like 'Prepare documents', 'Check the website', or 'Follow instructions'. Every detail must be stated explicitly.",
     "",
     "If the file was not attached (too large or unsupported type), infer only from the hints and say clearly that the file could not be read.",
   ].join("\n");
@@ -165,5 +192,9 @@ export async function extractDocumentAndReviewFromUpload(input: {
   return {
     documentSummary: clipSummary(object.documentSummary.trim()),
     fields: dedupeFieldKeys(fields),
+    actionItems: object.actionItems.map((a) => ({
+      title: a.title.trim(),
+      detail: a.detail.trim(),
+    })),
   };
 }
