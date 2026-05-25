@@ -245,7 +245,6 @@ function ReviewStepInner() {
     setConfirmed((prev) => ({ ...prev, [key]: false }));
   }, []);
 
-  
   const rowsForUi = reviewFields;
 
   const allRowsConfirmed = !extracting && rowsForUi.length > 0 && rowsForUi.every((row) => !!confirmed[row.key]);

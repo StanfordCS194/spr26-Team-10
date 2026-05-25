@@ -45,6 +45,22 @@ const extractionSchema = z.object({
     )
     .min(3)
     .max(7),
+  actionItems: z
+    .array(
+      z.object({
+        title: z.string().describe("Short imperative action title (3–5 words)"),
+        detail: z
+          .string()
+          .describe(
+            "One to two sentences with explicit, form-specific detail. Name exact documents, exact dollar amounts, exact addresses or portal URLs, exact dates.",
+          ),
+      }),
+    )
+    .min(2)
+    .max(5)
+    .describe(
+      "Concrete next steps for this exact form: required documents (list them by name), fees (exact amounts), where to submit, deadlines. Write title and detail in the same language as the fields.",
+    ),
 });
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -96,6 +112,8 @@ export function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
  * One multimodal LLM call: reads the uploaded file (PDF or image) and returns
  * stored document summary text plus structured review rows for step 2.
  */
+export type ActionItemInput = { title: string; detail: string };
+
 export async function extractDocumentAndReviewFromUpload(input: {
   buffer: Buffer;
   meta: UploadFileMeta;
@@ -103,7 +121,7 @@ export async function extractDocumentAndReviewFromUpload(input: {
   formType: string;
   formDescription: string;
   heuristicHint: string;
-}): Promise<{ documentSummary: string; fields: ReviewField[] }> {
+}): Promise<{ documentSummary: string; fields: ReviewField[]; actionItems: ActionItemInput[] }> {
   const key = process.env.OPENAI_API_KEY?.trim();
   if (!key) {
     throw new Error("Missing OPENAI_API_KEY for document extraction");
@@ -165,5 +183,9 @@ export async function extractDocumentAndReviewFromUpload(input: {
   return {
     documentSummary: clipSummary(object.documentSummary.trim()),
     fields: dedupeFieldKeys(fields),
+    actionItems: object.actionItems.map((a) => ({
+      title: a.title.trim(),
+      detail: a.detail.trim(),
+    })),
   };
 }

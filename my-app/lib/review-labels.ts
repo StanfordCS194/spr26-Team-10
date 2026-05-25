@@ -10,7 +10,7 @@ export type ReviewLabels = {
   hint: string;
   back: string;
   confirm: string;
-  navBack: string;  
+  navBack: string;
   step1Title: string;
   step1Desc: string;
   step2Title: string;
