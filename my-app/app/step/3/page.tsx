@@ -23,6 +23,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
+import PdfViewer from "@/components/pdf-viewer/PdfViewer";
 import MessageBubble from "@/app/chat/MessageBubble";
 import type { ChatUIMessage } from "@/app/api/chat/route";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
@@ -310,6 +311,7 @@ function ChatPageContent() {
   );
 
   const [inputValue, setInputValue] = useState("");
+  const [selectionChip, setSelectionChip] = useState<string | null>(null);
   const [sidebarDocument, setSidebarDocument] =
     useState<SidebarDocument | null>(null);
   const [showDocViewer, setShowDocViewer] = useState(false);
@@ -403,9 +405,12 @@ function ChatPageContent() {
 
   const handleSend = (text?: string) => {
     const raw = (text ?? inputValue).trim();
-    if (!raw || isBusy || !documentId) return;
+    if ((!raw && !selectionChip) || isBusy || !documentId) return;
+    const full = selectionChip
+      ? `About this section: "${selectionChip}"${raw ? `\n\n${raw}` : ""}`
+      : raw;
     sendMessage(
-      { text: raw },
+      { text: full },
       {
         body: {
           documentId,
@@ -414,12 +419,18 @@ function ChatPageContent() {
       },
     );
     setInputValue("");
+    setSelectionChip(null);
+  };
+
+  const handleAskAboutSelection = (text: string) => {
+    setSelectionChip(text);
+    setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (inputValue.trim() || selectionChip) handleSend();
     }
   };
 
@@ -568,10 +579,10 @@ function ChatPageContent() {
               </div>
               <div className={styles.docViewerBody}>
                 {sidebarDocument.fileName.toLowerCase().endsWith(".pdf") ? (
-                  <iframe
-                    src={sidebarDocument.fileUrl}
-                    className={styles.docViewerFrame}
-                    title={sidebarDocument.fileName}
+                  <PdfViewer
+                    url={sidebarDocument.fileUrl}
+                    fileName={sidebarDocument.fileName}
+                    onSelectText={handleAskAboutSelection}
                   />
                 ) : (
                   <img
@@ -699,30 +710,48 @@ function ChatPageContent() {
           <div className={styles.inputArea}>
             <span className="sr-only">{labels.inputLabel}</span>
             <div className={styles.inputBox}>
-              <textarea
-                ref={textareaRef}
-                className={styles.textarea}
-                placeholder={
-                  !documentId
-                    ? labels.chatDisabledPlaceholder
-                    : labels.chatPlaceholder
-                }
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                disabled={!documentId || isBusy}
-                aria-label={labels.inputLabel}
-              />
-              <button
-                type="button"
-                className={styles.sendBtn}
-                onClick={() => handleSend()}
-                disabled={!documentId || !inputValue.trim() || isBusy}
-                aria-label="Send message"
-              >
-                <IconArrowUp size={14} aria-hidden />
-              </button>
+              {selectionChip && (
+                <div className={styles.selectionChip}>
+                  <span className={styles.selectionChipLabel}>Asking about:</span>
+                  <span className={styles.selectionChipText}>"{selectionChip}"</span>
+                  <button
+                    type="button"
+                    className={styles.selectionChipDismiss}
+                    onClick={() => setSelectionChip(null)}
+                    aria-label="Remove selection context"
+                  >
+                    <IconX size={10} aria-hidden />
+                  </button>
+                </div>
+              )}
+              <div className={styles.inputRow}>
+                <textarea
+                  ref={textareaRef}
+                  className={styles.textarea}
+                  placeholder={
+                    !documentId
+                      ? labels.chatDisabledPlaceholder
+                      : selectionChip
+                      ? "Add your question (optional)…"
+                      : labels.chatPlaceholder
+                  }
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  disabled={!documentId || isBusy}
+                  aria-label={labels.inputLabel}
+                />
+                <button
+                  type="button"
+                  className={styles.sendBtn}
+                  onClick={() => handleSend()}
+                  disabled={!documentId || (!inputValue.trim() && !selectionChip) || isBusy}
+                  aria-label="Send message"
+                >
+                  <IconArrowUp size={14} aria-hidden />
+                </button>
+              </div>
             </div>
             <p className={styles.disclaimer}>{labels.footerHint}</p>
           </div>
