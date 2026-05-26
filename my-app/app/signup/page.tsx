@@ -1,25 +1,35 @@
 import Link from "next/link";
 import AuthShell from "@/app/auth/AuthShell";
 import SignupForm from "./SignupForm";
+import { getAuthLabels } from "@/lib/auth-labels";
 
-export default function SignupPage() {
+type SignupPageProps = {
+  searchParams: Promise<{ language?: string }>;
+};
+
+export default async function SignupPage({ searchParams }: SignupPageProps) {
+  const params = await searchParams;
+  const labels = getAuthLabels(params.language);
+  const isRtl = params.language === "ar";
+
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Save your forms and pick up where you left off."
+      title={labels.signupTitle}
+      subtitle={labels.signupSubtitle}
+      isRtl={isRtl}
       footer={
         <>
-          Already have an account?{" "}
+          {labels.signupFooterText}{" "}
           <Link
-            href="/login"
+            href={`/login${params.language ? `?language=${params.language}` : ""}`}
             className="font-semibold text-[var(--coral)] hover:underline"
           >
-            Sign in
+            {labels.signupFooterLink}
           </Link>
         </>
       }
     >
-      <SignupForm />
+      <SignupForm labels={labels} />
     </AuthShell>
   );
 }

@@ -17,7 +17,13 @@ export type ReviewLabels = {
   step2Desc: string;
   step3Title: string;
   step3Desc: string;
-
+  confirmAll: string;
+  save: string;
+  cancel: string;
+  extracting: string;
+  loadingDocument: string;
+  looksCorrect: string;
+  fixThis: string;
 };
 
 export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
@@ -39,6 +45,13 @@ export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
     step2Desc: "Confirm what we read before you ask questions.",
     step3Title: "Ask anything",
     step3Desc: "Questions answered clearly, in your language.",
+    confirmAll: "Confirm all",
+    save: "Save",
+    cancel: "Cancel",
+    extracting: "Reading your document…",
+    loadingDocument: "Loading document…",
+    looksCorrect: "Looks correct",
+    fixThis: "Fix this value",
   },
   es: {
     sidebarEyebrow: "Paso 2 de 3",
@@ -58,6 +71,13 @@ export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
     step2Desc: "Confirma lo que leímos antes de hacer preguntas.",
     step3Title: "Pregunta lo que quieras",
     step3Desc: "Preguntas respondidas claramente, en tu idioma.",
+    confirmAll: "Confirmar todo",
+    save: "Guardar",
+    cancel: "Cancelar",
+    extracting: "Leyendo tu documento…",
+    loadingDocument: "Cargando documento…",
+    looksCorrect: "Parece correcto",
+    fixThis: "Corregir este valor",
   },
   zh: {
     sidebarEyebrow: "第 2 步，共 3 步",
@@ -77,6 +97,13 @@ export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
     step2Desc: "在提问之前确认我们读取的内容。",
     step3Title: "随时提问",
     step3Desc: "用你的语言，清晰回答问题。",
+    confirmAll: "全部确认",
+    save: "保存",
+    cancel: "取消",
+    extracting: "正在读取文件…",
+    loadingDocument: "正在加载文档…",
+    looksCorrect: "看起来正确",
+    fixThis: "修正此值",
   },
   ar: {
     sidebarEyebrow: "الخطوة 2 من 3",
@@ -96,6 +123,13 @@ export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
     step2Desc: "تأكد مما قرأناه قبل طرح الأسئلة.",
     step3Title: "اسأل أي شيء",
     step3Desc: "إجابات واضحة بلغتك.",
+    confirmAll: "تأكيد الكل",
+    save: "حفظ",
+    cancel: "إلغاء",
+    extracting: "جارٍ قراءة مستندك…",
+    loadingDocument: "جارٍ تحميل المستند…",
+    looksCorrect: "يبدو صحيحًا",
+    fixThis: "تصحيح هذه القيمة",
   },
   fr: {
     sidebarEyebrow: "Étape 2 sur 3",
@@ -115,5 +149,12 @@ export const reviewLabels: Record<LanguageOption["code"], ReviewLabels> = {
     step2Desc: "Confirmez ce que nous avons lu avant de poser des questions.",
     step3Title: "Posez vos questions",
     step3Desc: "Des réponses claires, dans votre langue.",
+    confirmAll: "Tout confirmer",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    extracting: "Lecture de votre document…",
+    loadingDocument: "Chargement du document…",
+    looksCorrect: "Semble correct",
+    fixThis: "Corriger cette valeur",
   },
 };
