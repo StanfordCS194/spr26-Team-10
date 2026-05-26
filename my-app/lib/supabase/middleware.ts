@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/auth",
+  "/step",
 ];
 
 // /api routes still have their session cookies refreshed here, but they
@@ -40,9 +41,12 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: getUser() must be called to refresh the auth tokens. Do not
   // place any code between createServerClient and supabase.auth.getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    ({ data: { user } } = await supabase.auth.getUser());
+  } catch {
+    // Supabase unreachable — treat as unauthenticated and let public/guest routes through
+  }
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some(
