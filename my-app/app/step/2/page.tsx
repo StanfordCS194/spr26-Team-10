@@ -271,6 +271,17 @@ function ReviewStepInner() {
     setFlagged((prev) => ({ ...prev, [key]: false }));
   }, []);
 
+  const confirmAll = useCallback(() => {
+    const allConfirmed: Record<string, boolean> = {};
+    const allUnflagged: Record<string, boolean> = {};
+    reviewFields.forEach((row) => {
+      allConfirmed[row.key] = true;
+      allUnflagged[row.key] = false;
+    });
+    setConfirmed(allConfirmed);
+    setFlagged(allUnflagged);
+  }, [reviewFields]);
+
   const rowsForUi = reviewFields;
 
   const allRowsConfirmed = !extracting && rowsForUi.length > 0 && rowsForUi.every((row) => !!confirmed[row.key]);
