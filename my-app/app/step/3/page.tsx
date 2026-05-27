@@ -625,11 +625,6 @@ function ChatPageContent() {
                     url={sidebarDocument.fileUrl}
                     fileName={sidebarDocument.fileName}
                     onSelectText={handleAskAboutSelection}
-                    labels={{
-                      askBtn: labels.pdfAskBtn,
-                      download: labels.pdfDownload,
-                      loading: labels.pdfLoading,
-                    }}
                   />
                 ) : (
                   <img
