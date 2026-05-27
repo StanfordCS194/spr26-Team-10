@@ -573,7 +573,7 @@ export function LandingPageClient() {
             <div className={styles.heroActions}>
               <div className={styles.heroActionButtons}>
                 <Link
-                  href="/login"
+                  href={`/login?language=${selectedLanguage.code}`}
                   className={styles.btnHero}
                 >
                   {copy.getStarted}
@@ -724,7 +724,7 @@ export function LandingPageClient() {
           <p className={styles.ctaSub}>{copy.ctaSub}</p>
 
           <Link
-            href="/login"
+            href={`/login?language=${selectedLanguage.code}`}
             className={styles.btnCtaLarge}
           >
             {copy.uploadForm}

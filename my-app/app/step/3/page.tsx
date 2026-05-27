@@ -74,6 +74,13 @@ type UiLabels = {
   suggestQ2: string;
   suggestQ3: string;
   navBack: string;
+  hideForm: string;
+  viewForm: string;
+  askingAbout: string;
+  addQuestion: string;
+  pdfAskBtn: string;
+  pdfDownload: string;
+  pdfLoading: string;
 };
 
 const uiLabels: Record<LanguageOption["code"], UiLabels> = {
@@ -109,7 +116,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "What documents do I need to gather?",
     suggestQ2: "What does this line mean?",
     suggestQ3: "Can I file an extension?",
-    navBack: "Back to home", 
+    navBack: "Back to home",
+    hideForm: "Hide form",
+    viewForm: "View form",
+    askingAbout: "Asking about:",
+    addQuestion: "Add your question (optional)…",
+    pdfAskBtn: "Ask about this",
+    pdfDownload: "Download",
+    pdfLoading: "Loading PDF…",
   },
   es: {
     subtitle: "Lenguaje claro. Tu idioma. Sin jerga.",
@@ -143,7 +157,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "¿Qué documentos necesito reunir?",
     suggestQ2: "¿Qué significa esta línea?",
     suggestQ3: "¿Puedo pedir una prórroga?",
-    navBack: "Volver al inicio", 
+    navBack: "Volver al inicio",
+    hideForm: "Ocultar formulario",
+    viewForm: "Ver formulario",
+    askingAbout: "Preguntando sobre:",
+    addQuestion: "Añade tu pregunta (opcional)…",
+    pdfAskBtn: "Preguntar sobre esto",
+    pdfDownload: "Descargar",
+    pdfLoading: "Cargando PDF…",
   },
   zh: {
     subtitle: "清晰易懂。用你的语言。没有术语障碍。",
@@ -174,7 +195,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "我需要准备哪些材料？",
     suggestQ2: "这一栏是什么意思？",
     suggestQ3: "我可以申请延期吗？",
-    navBack: "返回主页", 
+    navBack: "返回主页",
+    hideForm: "隐藏表格",
+    viewForm: "查看表格",
+    askingAbout: "询问关于：",
+    addQuestion: "添加你的问题（可选）…",
+    pdfAskBtn: "询问此处",
+    pdfDownload: "下载",
+    pdfLoading: "正在加载 PDF…",
   },
   ar: {
     subtitle: "لغة واضحة. لغتك. بلا مصطلحات معقدة.",
@@ -206,7 +234,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "ما المستندات التي أحتاجها؟",
     suggestQ2: "ماذا يعني هذا السطر؟",
     suggestQ3: "هل يمكنني طلب تمديد؟",
-    navBack: "العودة إلى الرئيسية", 
+    navBack: "العودة إلى الرئيسية",
+    hideForm: "إخفاء النموذج",
+    viewForm: "عرض النموذج",
+    askingAbout: "سؤال عن:",
+    addQuestion: "أضف سؤالك (اختياري)…",
+    pdfAskBtn: "اسأل عن هذا",
+    pdfDownload: "تنزيل",
+    pdfLoading: "جارٍ تحميل PDF…",
   },
   fr: {
     subtitle: "Langage simple. Votre langue. Pas de jargon.",
@@ -241,7 +276,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "Quels documents dois-je rassembler ?",
     suggestQ2: "Que signifie cette ligne ?",
     suggestQ3: "Puis-je demander une prolongation ?",
-    navBack: "Retour à l'accueil", 
+    navBack: "Retour à l'accueil",
+    hideForm: "Masquer le formulaire",
+    viewForm: "Voir le formulaire",
+    askingAbout: "Question sur :",
+    addQuestion: "Ajoutez votre question (optionnel)…",
+    pdfAskBtn: "Poser une question sur ceci",
+    pdfDownload: "Télécharger",
+    pdfLoading: "Chargement du PDF…",
   },
 };
 
@@ -490,7 +532,7 @@ function ChatPageContent() {
                 onClick={() => setShowDocViewer((v) => !v)}
               >
                 <IconLayoutSidebarRightExpand size={13} aria-hidden />
-                {showDocViewer ? "Hide form" : "View form"}
+                {showDocViewer ? labels.hideForm : labels.viewForm}
               </button>
             ) : null}
           </div>
@@ -712,7 +754,7 @@ function ChatPageContent() {
             <div className={styles.inputBox}>
               {selectionChip && (
                 <div className={styles.selectionChip}>
-                  <span className={styles.selectionChipLabel}>Asking about:</span>
+                  <span className={styles.selectionChipLabel}>{labels.askingAbout}</span>
                   <span className={styles.selectionChipText}>"{selectionChip}"</span>
                   <button
                     type="button"
@@ -732,7 +774,7 @@ function ChatPageContent() {
                     !documentId
                       ? labels.chatDisabledPlaceholder
                       : selectionChip
-                      ? "Add your question (optional)…"
+                      ? labels.addQuestion
                       : labels.chatPlaceholder
                   }
                   value={inputValue}

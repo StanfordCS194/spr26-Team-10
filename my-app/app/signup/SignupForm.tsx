@@ -9,8 +9,13 @@ import {
   submitButtonClass,
   successClass,
 } from "@/app/auth/form-styles";
+import type { AuthLabels } from "@/lib/auth-labels";
 
-export default function SignupForm() {
+type SignupFormProps = {
+  labels: AuthLabels;
+};
+
+export default function SignupForm({ labels }: SignupFormProps) {
   const [state, formAction, pending] = useActionState<
     AuthFormState | undefined,
     FormData
@@ -20,7 +25,7 @@ export default function SignupForm() {
     <form action={formAction} className="flex flex-col gap-4">
       <div>
         <label htmlFor="fullName" className={labelClass}>
-          Full name
+          {labels.fullName}
         </label>
         <input
           id="fullName"
@@ -34,7 +39,7 @@ export default function SignupForm() {
 
       <div>
         <label htmlFor="email" className={labelClass}>
-          Email
+          {labels.email}
         </label>
         <input
           id="email"
@@ -49,7 +54,7 @@ export default function SignupForm() {
 
       <div>
         <label htmlFor="password" className={labelClass}>
-          Password
+          {labels.password}
         </label>
         <input
           id="password"
@@ -60,16 +65,14 @@ export default function SignupForm() {
           minLength={8}
           className={inputClass}
         />
-        <p className="mt-1 text-xs text-gray-500">
-          At least 8 characters.
-        </p>
+        <p className="mt-1 text-xs text-gray-500">{labels.passwordHint}</p>
       </div>
 
       {state?.error && <p className={errorClass}>{state.error}</p>}
       {state?.message && <p className={successClass}>{state.message}</p>}
 
       <button type="submit" disabled={pending} className={submitButtonClass}>
-        {pending ? "Creating account…" : "Create account"}
+        {pending ? labels.creatingAccount : labels.createAccount}
       </button>
     </form>
   );

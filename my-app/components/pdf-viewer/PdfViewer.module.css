@@ -1,4 +1,5 @@
 .root {
+  direction: ltr;
   display: flex;
   flex-direction: column;
   height: 100%;
