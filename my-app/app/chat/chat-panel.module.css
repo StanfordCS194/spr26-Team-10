@@ -326,6 +326,15 @@
   align-self: flex-start;
 }
 
+/* In RTL (Arabic) flex-start/end swap sides, so reverse the alignment */
+:global([dir="rtl"]) .bubbleUser {
+  align-self: flex-start;
+}
+
+:global([dir="rtl"]) .bubbleAssistant {
+  align-self: flex-end;
+}
+
 .bubbleAssistantInner {
   display: flex;
   flex-direction: column;
