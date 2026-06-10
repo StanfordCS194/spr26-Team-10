@@ -6,6 +6,7 @@ import type { AiExtractionPayload, ReviewField } from "@/types/review-field";
 import {
   dedupeFieldKeys,
   extractDocumentAndReviewFromUpload,
+  type ActionItemInput,
 } from "@/lib/upload-llm-extraction";
 
 export const runtime = "nodejs";
@@ -93,34 +94,28 @@ export async function POST(req: Request) {
           error: "Failed to save uploaded document metadata",
           details: docError?.message,
           hint:
-            "Run sql/06_chat_history_user_links.sql and sql/07_rls_user_data.sql in Supabase so authenticated users can insert documents.",
+            "Run sql/06_chat_history_user_links.sql and sql/08_rls_user_data.sql in Supabase so authenticated users can insert documents.",
         },
         { status: 500 },
       );
     }
 
-    const actionItems = [
-      {
-        document_id: createdDoc.id,
-        title: "Gather Required Documents",
-        detail: "Copy of passport, visa, I-94",
-        sort_order: 1,
-      },
-      {
-        document_id: createdDoc.id,
-        title: "Filing Fee",
-        detail: "$410 (check or money order)",
-        sort_order: 2,
-      },
-      {
-        document_id: createdDoc.id,
-        title: "Deadline",
-        detail: "Submit before June 15, 2026",
-        sort_order: 3,
-      },
-    ];
-
-    await supabase.from("action_items").insert(actionItems);
+    // Upload the original file to Supabase Storage so users can view it later
+    const storageKey = `${createdDoc.id}/${file.name}`;
+    const { error: storageError } = await supabase.storage
+      .from("documents")
+      .upload(storageKey, fileBuffer, {
+        contentType: file.type || "application/octet-stream",
+        upsert: false,
+      });
+    if (storageError) {
+      console.warn("[upload] storage upload failed:", storageError.message);
+    } else {
+      await supabase
+        .from("documents")
+        .update({ storage_path: storageKey })
+        .eq("id", createdDoc.id);
+    }
 
     const documentId = createdDoc.id;
 
@@ -130,6 +125,7 @@ export async function POST(req: Request) {
         const sb = createAdminClient();
         let documentSummary: string;
         let reviewFields: ReviewField[];
+        let actionItems: ActionItemInput[] = [];
 
         try {
           const extracted = await extractDocumentAndReviewFromUpload({
@@ -142,6 +138,7 @@ export async function POST(req: Request) {
           });
           documentSummary = extracted.documentSummary;
           reviewFields = extracted.fields;
+          actionItems = extracted.actionItems;
           console.log("[upload] LLM extraction succeeded for", documentId);
         } catch (e) {
           console.warn("[upload] LLM extraction failed (after), using heuristics only:", e);
@@ -186,6 +183,21 @@ export async function POST(req: Request) {
           console.warn("[upload] document update failed (after):", updateErr.message);
         } else {
           console.log("[upload] extraction complete for", documentId);
+        }
+
+        if (actionItems.length > 0) {
+          const rows = actionItems.map((item, i) => ({
+            document_id: documentId,
+            title: item.title,
+            detail: item.detail,
+            sort_order: i + 1,
+          }));
+          const { error: aiErr } = await sb.from("action_items").insert(rows);
+          if (aiErr) {
+            console.warn("[upload] action items insert failed:", aiErr.message);
+          } else {
+            console.log("[upload] inserted", rows.length, "action items for", documentId);
+          }
         }
       } catch (e) {
         console.warn("[upload] deferred pipeline failed (after):", e);

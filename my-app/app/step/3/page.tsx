@@ -17,12 +17,16 @@ import {
   IconChevronRight,
   IconCircleDot,
   IconFileText,
+  IconLayoutSidebarRightExpand,
   IconSparkles,
   IconUpload,
+  IconX,
 } from "@tabler/icons-react";
 import { AppNav } from "@/components/navigation/app-nav";
+import PdfViewer from "@/components/pdf-viewer/PdfViewer";
 import MessageBubble from "@/app/chat/MessageBubble";
 import ChatHistorySidebar from "@/app/chat/ChatHistorySidebar";
+import type { ChatUIMessage } from "@/app/api/chat/route";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import { resolveLanguageForStep } from "@/lib/language-preference";
 import styles from "@/app/chat/chat-panel.module.css";
@@ -39,6 +43,7 @@ type SidebarDocument = {
   fileName: string;
   formType: string | null;
   formDescription: string | null;
+  fileUrl: string | null;
 };
 
 type UiLabels = {
@@ -77,6 +82,14 @@ type UiLabels = {
   deleteChatConfirm: string;
   deleteChatLabel: string;
   untitledChat: string;
+  navBack: string;
+  hideForm: string;
+  viewForm: string;
+  askingAbout: string;
+  addQuestion: string;
+  pdfAskBtn: string;
+  pdfDownload: string;
+  pdfLoading: string;
 };
 
 const uiLabels: Record<LanguageOption["code"], UiLabels> = {
@@ -120,6 +133,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     deleteChatConfirm: "Delete this chat permanently?",
     deleteChatLabel: "Delete chat",
     untitledChat: "Untitled chat",
+    navBack: "Back to home",
+    hideForm: "Hide form",
+    viewForm: "View form",
+    askingAbout: "Asking about:",
+    addQuestion: "Add your question (optional)…",
+    pdfAskBtn: "Ask about this",
+    pdfDownload: "Download",
+    pdfLoading: "Loading PDF…",
   },
   es: {
     subtitle: "Lenguaje claro. Tu idioma. Sin jerga.",
@@ -161,6 +182,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     deleteChatConfirm: "¿Eliminar este chat permanentemente?",
     deleteChatLabel: "Eliminar chat",
     untitledChat: "Chat sin título",
+    navBack: "Volver al inicio",
+    hideForm: "Ocultar formulario",
+    viewForm: "Ver formulario",
+    askingAbout: "Preguntando sobre:",
+    addQuestion: "Añade tu pregunta (opcional)…",
+    pdfAskBtn: "Preguntar sobre esto",
+    pdfDownload: "Descargar",
+    pdfLoading: "Cargando PDF…",
   },
   zh: {
     subtitle: "清晰易懂。用你的语言。没有术语障碍。",
@@ -199,6 +228,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     deleteChatConfirm: "永久删除此对话？",
     deleteChatLabel: "删除对话",
     untitledChat: "未命名对话",
+    navBack: "返回主页",
+    hideForm: "隐藏表格",
+    viewForm: "查看表格",
+    askingAbout: "询问关于：",
+    addQuestion: "添加你的问题（可选）…",
+    pdfAskBtn: "询问此处",
+    pdfDownload: "下载",
+    pdfLoading: "正在加载 PDF…",
   },
   ar: {
     subtitle: "لغة واضحة. لغتك. بلا مصطلحات معقدة.",
@@ -238,6 +275,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     deleteChatConfirm: "حذف هذه المحادثة نهائيًا؟",
     deleteChatLabel: "حذف المحادثة",
     untitledChat: "محادثة بدون عنوان",
+    navBack: "العودة إلى الرئيسية",
+    hideForm: "إخفاء النموذج",
+    viewForm: "عرض النموذج",
+    askingAbout: "سؤال عن:",
+    addQuestion: "أضف سؤالك (اختياري)…",
+    pdfAskBtn: "اسأل عن هذا",
+    pdfDownload: "تنزيل",
+    pdfLoading: "جارٍ تحميل PDF…",
   },
   fr: {
     subtitle: "Langage simple. Votre langue. Pas de jargon.",
@@ -280,8 +325,56 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     deleteChatConfirm: "Supprimer définitivement cette discussion ?",
     deleteChatLabel: "Supprimer la discussion",
     untitledChat: "Discussion sans titre",
+    navBack: "Retour à l'accueil",
+    hideForm: "Masquer le formulaire",
+    viewForm: "Voir le formulaire",
+    askingAbout: "Question sur :",
+    addQuestion: "Ajoutez votre question (optionnel)…",
+    pdfAskBtn: "Poser une question sur ceci",
+    pdfDownload: "Télécharger",
+    pdfLoading: "Chargement du PDF…",
   },
 };
+
+function useResizeHandle(
+  getSize: () => number,
+  setSize: (n: number) => void,
+  min: number,
+  max: number,
+) {
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startSize = useRef(0);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startX.current = e.clientX;
+      startSize.current = getSize();
+      setIsResizing(true);
+
+      const onMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        const delta = ev.clientX - startX.current;
+        setSize(Math.min(max, Math.max(min, startSize.current + delta)));
+      };
+      const onUp = () => {
+        dragging.current = false;
+        setIsResizing(false);
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [min, max],
+  );
+
+  return { onMouseDown, isResizing };
+}
 
 function SidebarDocSkeleton() {
   return (
@@ -297,13 +390,15 @@ type ChatThreadProps = {
   language: LanguageOption["code"];
   labels: UiLabels;
   documentId: string | undefined;
+  pendingSelection?: string | null;
+  onConsumeSelection?: () => void;
 };
 
 function toUIMessage(row: {
   id: string;
   role: "user" | "assistant";
   content: string;
-}): UIMessage {
+}): ChatUIMessage {
   return {
     id: row.id,
     role: row.role,
@@ -316,12 +411,25 @@ function ChatThread({
   language,
   labels,
   documentId,
+  pendingSelection,
+  onConsumeSelection,
 }: ChatThreadProps) {
-  const [hydrated, setHydrated] = useState<UIMessage[] | null>(null);
+  const [hydrated, setHydrated] = useState<ChatUIMessage[] | null>(null);
   const [hydrationError, setHydrationError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [selectionChip, setSelectionChip] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mirror the page-level pending selection (from PDF text selection) into
+  // local chat state. The page clears its own state via onConsumeSelection so a
+  // re-selected identical string still triggers an effect.
+  useEffect(() => {
+    if (!pendingSelection) return;
+    setSelectionChip(pendingSelection);
+    onConsumeSelection?.();
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }, [pendingSelection, onConsumeSelection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -348,10 +456,11 @@ function ChatThread({
     };
   }, [sessionId, labels.loadFailed]);
 
-  const { messages, sendMessage, status, error, regenerate } = useChat({
-    messages: hydrated ?? [],
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-  });
+  const { messages, sendMessage, status, error, regenerate } =
+    useChat<ChatUIMessage>({
+      messages: hydrated ?? [],
+      transport: new DefaultChatTransport({ api: "/api/chat" }),
+    });
 
   const isBusy = status === "submitted" || status === "streaming";
   const showTyping = isBusy;
@@ -365,9 +474,13 @@ function ChatThread({
   const handleSend = useCallback(
     (text?: string) => {
       const raw = (text ?? inputValue).trim();
-      if (!raw || isBusy) return;
+      if (!raw && !selectionChip) return;
+      if (isBusy) return;
+      const full = selectionChip
+        ? `About this section: "${selectionChip}"${raw ? `\n\n${raw}` : ""}`
+        : raw;
       sendMessage(
-        { text: raw },
+        { text: full },
         {
           body: {
             sessionId,
@@ -376,14 +489,15 @@ function ChatThread({
         },
       );
       setInputValue("");
+      setSelectionChip(null);
     },
-    [inputValue, isBusy, language, sendMessage, sessionId],
+    [inputValue, isBusy, language, selectionChip, sendMessage, sessionId],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (inputValue.trim() || selectionChip) handleSend();
     }
   };
 
@@ -433,6 +547,7 @@ function ChatThread({
                 key={m.id}
                 message={m}
                 onSuggestionClick={(value) => setInputValue(value)}
+                citations={m.metadata?.sources}
               />
             ))
           : null}
@@ -482,30 +597,54 @@ function ChatThread({
       <div className={styles.inputArea}>
         <span className="sr-only">{labels.inputLabel}</span>
         <div className={styles.inputBox}>
-          <textarea
-            ref={textareaRef}
-            className={styles.textarea}
-            placeholder={
-              !documentId
-                ? labels.chatDisabledPlaceholder
-                : labels.chatPlaceholder
-            }
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            disabled={isBusy || isHydrating}
-            aria-label={labels.inputLabel}
-          />
-          <button
-            type="button"
-            className={styles.sendBtn}
-            onClick={() => handleSend()}
-            disabled={!inputValue.trim() || isBusy || isHydrating}
-            aria-label="Send message"
-          >
-            <IconArrowUp size={14} aria-hidden />
-          </button>
+          {selectionChip && (
+            <div className={styles.selectionChip}>
+              <span className={styles.selectionChipLabel}>
+                {labels.askingAbout}
+              </span>
+              <span className={styles.selectionChipText}>
+                &quot;{selectionChip}&quot;
+              </span>
+              <button
+                type="button"
+                className={styles.selectionChipDismiss}
+                onClick={() => setSelectionChip(null)}
+                aria-label="Remove selection context"
+              >
+                <IconX size={10} aria-hidden />
+              </button>
+            </div>
+          )}
+          <div className={styles.inputRow}>
+            <textarea
+              ref={textareaRef}
+              className={styles.textarea}
+              placeholder={
+                !documentId
+                  ? labels.chatDisabledPlaceholder
+                  : selectionChip
+                    ? labels.addQuestion
+                    : labels.chatPlaceholder
+              }
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              disabled={isBusy || isHydrating}
+              aria-label={labels.inputLabel}
+            />
+            <button
+              type="button"
+              className={styles.sendBtn}
+              onClick={() => handleSend()}
+              disabled={
+                (!inputValue.trim() && !selectionChip) || isBusy || isHydrating
+              }
+              aria-label="Send message"
+            >
+              <IconArrowUp size={14} aria-hidden />
+            </button>
+          </div>
         </div>
         <p className={styles.disclaimer}>{labels.footerHint}</p>
       </div>
@@ -524,8 +663,12 @@ function ChatPageContent() {
     [searchParams],
   );
 
+  const [pendingSelection, setPendingSelection] = useState<string | null>(null);
   const [sidebarDocument, setSidebarDocument] =
     useState<SidebarDocument | null>(null);
+  const [showDocViewer, setShowDocViewer] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [docViewerWidth, setDocViewerWidth] = useState(480);
   const [sidebarActionItems, setSidebarActionItems] = useState<
     SidebarActionItem[]
   >([]);
@@ -534,8 +677,19 @@ function ChatPageContent() {
   const [sidebarFetchKey, setSidebarFetchKey] = useState(0);
   const [creatingSession, setCreatingSession] = useState(false);
 
+  const sidebarResize = useResizeHandle(
+    () => sidebarWidth, setSidebarWidth, 180, 480,
+  );
+  const docViewerResize = useResizeHandle(
+    () => docViewerWidth, setDocViewerWidth, 200, 900,
+  );
+
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
+
+  const handleAskAboutSelection = useCallback((text: string) => {
+    setPendingSelection(text);
+  }, []);
 
   // Auto-create a chat session whenever we have a documentId but no sessionId
   // in the URL. The replace() call rewrites the URL so we land on a stable
@@ -604,7 +758,10 @@ function ChatPageContent() {
         }
 
         if (!cancelled) {
-          setSidebarDocument(data.document);
+          setSidebarDocument({
+            ...data.document,
+            fileUrl: (data.document as SidebarDocument & { fileUrl?: string | null }).fileUrl ?? null,
+          });
           setSidebarActionItems(data.actionItems ?? []);
         }
       } catch (e) {
@@ -630,10 +787,10 @@ function ChatPageContent() {
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
-      <AppNav backLabel="Back to home" backTo="/" />
+      <AppNav backLabel={labels.navBack} backTo="/" />
 
       <div className={styles.body}>
-        <aside className={styles.sidebar}>
+        <aside className={styles.sidebar} style={{ width: sidebarWidth }}>
           <div className={styles.sidebarSection}>
             <ChatHistorySidebar
               currentSessionId={sessionId ?? null}
@@ -680,6 +837,15 @@ function ChatPageContent() {
               >
                 {labels.goUpload}
               </Link>
+            ) : sidebarDocument?.fileUrl ? (
+              <button
+                type="button"
+                className={styles.viewFormBtn}
+                onClick={() => setShowDocViewer((v) => !v)}
+              >
+                <IconLayoutSidebarRightExpand size={13} aria-hidden />
+                {showDocViewer ? labels.hideForm : labels.viewForm}
+              </button>
             ) : null}
           </div>
 
@@ -746,6 +912,54 @@ function ChatPageContent() {
           </div>
         </aside>
 
+        <div
+          className={`${styles.resizeHandle}${sidebarResize.isResizing ? ` ${styles.resizing}` : ""}`}
+          onMouseDown={sidebarResize.onMouseDown}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+        />
+
+        {showDocViewer && sidebarDocument?.fileUrl ? (
+          <>
+            <div className={styles.docViewer} style={{ width: docViewerWidth }}>
+              <div className={styles.docViewerHeader}>
+                <span className={styles.docViewerTitle}>{sidebarDocument.fileName}</span>
+                <button
+                  type="button"
+                  className={styles.docViewerClose}
+                  onClick={() => setShowDocViewer(false)}
+                  aria-label="Close form viewer"
+                >
+                  <IconX size={14} aria-hidden />
+                </button>
+              </div>
+              <div className={styles.docViewerBody}>
+                {sidebarDocument.fileName.toLowerCase().endsWith(".pdf") ? (
+                  <PdfViewer
+                    url={sidebarDocument.fileUrl}
+                    fileName={sidebarDocument.fileName}
+                    onSelectText={handleAskAboutSelection}
+                  />
+                ) : (
+                  <img
+                    src={sidebarDocument.fileUrl}
+                    alt={sidebarDocument.fileName}
+                    className={styles.docViewerImage}
+                  />
+                )}
+              </div>
+            </div>
+            <div
+              className={`${styles.resizeHandle}${docViewerResize.isResizing ? ` ${styles.resizing}` : ""}`}
+              onMouseDown={docViewerResize.onMouseDown}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize form viewer"
+            />
+          </>
+        ) : null}
+
         <div className={styles.chatPanel}>
           <div className={styles.chatHeader}>
             <div className={styles.chatHeaderLeft}>
@@ -789,6 +1003,8 @@ function ChatPageContent() {
               language={selectedLanguage.code}
               labels={labels}
               documentId={documentId}
+              pendingSelection={pendingSelection}
+              onConsumeSelection={() => setPendingSelection(null)}
             />
           )}
         </div>

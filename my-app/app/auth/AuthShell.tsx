@@ -6,6 +6,7 @@ type AuthShellProps = {
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  isRtl?: boolean;
 };
 
 export default function AuthShell({
@@ -13,9 +14,10 @@ export default function AuthShell({
   subtitle,
   children,
   footer,
+  isRtl,
 }: AuthShellProps) {
   return (
-    <main className="min-h-screen bg-[var(--cream)] px-4 py-10 sm:px-6">
+    <main dir={isRtl ? "rtl" : "ltr"} className="min-h-screen bg-[var(--cream)] px-4 py-10 sm:px-6">
       <div className="mx-auto flex w-full max-w-md flex-col items-center">
         <Link href="/" className="mb-6 inline-flex">
           <Image

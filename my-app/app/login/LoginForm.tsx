@@ -9,13 +9,15 @@ import {
   labelClass,
   submitButtonClass,
 } from "@/app/auth/form-styles";
+import type { AuthLabels } from "@/lib/auth-labels";
 
 type LoginFormProps = {
   redirectTo: string;
   initialError?: string;
+  labels: AuthLabels;
 };
 
-export default function LoginForm({ redirectTo, initialError }: LoginFormProps) {
+export default function LoginForm({ redirectTo, initialError, labels }: LoginFormProps) {
   const [state, formAction, pending] = useActionState<
     AuthFormState | undefined,
     FormData
@@ -27,7 +29,7 @@ export default function LoginForm({ redirectTo, initialError }: LoginFormProps) 
 
       <div>
         <label htmlFor="email" className={labelClass}>
-          Email
+          {labels.email}
         </label>
         <input
           id="email"
@@ -43,13 +45,13 @@ export default function LoginForm({ redirectTo, initialError }: LoginFormProps) 
       <div>
         <div className="flex items-center justify-between">
           <label htmlFor="password" className={labelClass}>
-            Password
+            {labels.password}
           </label>
           <Link
             href="/forgot-password"
             className="text-xs font-medium text-[var(--coral)] hover:underline"
           >
-            Forgot password?
+            {labels.forgotPassword}
           </Link>
         </div>
         <input
@@ -66,7 +68,7 @@ export default function LoginForm({ redirectTo, initialError }: LoginFormProps) 
       {state?.error && <p className={errorClass}>{state.error}</p>}
 
       <button type="submit" disabled={pending} className={submitButtonClass}>
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? labels.signingIn : labels.signIn}
       </button>
     </form>
   );

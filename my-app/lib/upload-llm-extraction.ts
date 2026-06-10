@@ -45,6 +45,22 @@ const extractionSchema = z.object({
     )
     .min(3)
     .max(7),
+  actionItems: z
+    .array(
+      z.object({
+        title: z.string().describe("Short imperative action title (3–5 words)"),
+        detail: z
+          .string()
+          .describe(
+            "One to two sentences with explicit, form-specific detail. Name exact documents, exact dollar amounts, exact addresses or portal URLs, exact dates.",
+          ),
+      }),
+    )
+    .min(2)
+    .max(5)
+    .describe(
+      "Concrete next steps for this exact form: required documents (list them by name), fees (exact amounts), where to submit, deadlines. Write title and detail in the same language as the fields.",
+    ),
 });
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -96,6 +112,8 @@ export function dedupeFieldKeys(fields: ReviewField[]): ReviewField[] {
  * One multimodal LLM call: reads the uploaded file (PDF or image) and returns
  * stored document summary text plus structured review rows for step 2.
  */
+export type ActionItemInput = { title: string; detail: string };
+
 export async function extractDocumentAndReviewFromUpload(input: {
   buffer: Buffer;
   meta: UploadFileMeta;
@@ -103,7 +121,7 @@ export async function extractDocumentAndReviewFromUpload(input: {
   formType: string;
   formDescription: string;
   heuristicHint: string;
-}): Promise<{ documentSummary: string; fields: ReviewField[] }> {
+}): Promise<{ documentSummary: string; fields: ReviewField[]; actionItems: ActionItemInput[] }> {
   const key = process.env.OPENAI_API_KEY?.trim();
   if (!key) {
     throw new Error("Missing OPENAI_API_KEY for document extraction");
@@ -117,13 +135,14 @@ export async function extractDocumentAndReviewFromUpload(input: {
     "You help formly.ai, an app that helps people understand U.S. government and official forms.",
     "You are given the uploaded file (when attached) plus filename and heuristic hints.",
     "",
+    `LANGUAGE REQUIREMENT: Write ALL output text — every field label, field value, action item title, action item detail, and document summary — in ${languageName}. This is mandatory. Do not write any output in English unless the text is a proper name, acronym, URL, or dollar amount that has no ${languageName} equivalent (e.g. keep 'USCIS', '$520', 'ssa.gov' as-is, but translate descriptions and instructions).`,
+    "",
     "Heuristic hints (may be wrong — trust the file when it disagrees):",
     `- File name: ${input.meta.name}`,
     `- Suggested form type: ${input.formType}`,
     `- Suggested description: ${input.formDescription}`,
     `- Starter hint (if file is missing or unreadable): ${input.heuristicHint}`,
     "",
-    `Write every field "label" and "value" in ${languageName}.`,
     "Return 4 to 7 structured fields the user should confirm before chatting.",
     "Include: document type / program, who it is for (generic wording), jurisdiction or agency if visible, dates or deadlines if visible, fees if visible, and one alert row for risks or \"verify this\" when plausible.",
     "",
@@ -131,6 +150,15 @@ export async function extractDocumentAndReviewFromUpload(input: {
     "- Plain language, for chat context.",
     "- Summarize what the document is and key visible requirements or sections.",
     "- Never invent real PII; quote only what is clearly visible.",
+    "",
+    "actionItems: 2 to 5 concrete next steps. Each must be highly specific to this exact form — not generic.",
+    "Rules (content requirements — write the titles and details in the required language):",
+    "- One item must list the EXACT documents required for this specific form (e.g. for I-765: passport-style photos, copy of I-94, copy of current visa stamp, any prior EAD, supporting eligibility docs such as Form I-20 or I-797). Never say 'gather identification' — list the actual items.",
+    "- One item must state the exact filing fee dollar amount if visible or known (e.g. '$520 by check or money order'). If you cannot confirm the fee, say to verify on the official agency website and name the website.",
+    "- One item must give the specific mailing address, portal URL, or office name for submission — not just the agency name.",
+    "- For any deadline mentioned in the document, state it explicitly with the date or timeframe.",
+    "- Include a warning for the single most common mistake applicants make on this specific form.",
+    "NEVER write vague items. Every detail must be stated explicitly.",
     "",
     "If the file was not attached (too large or unsupported type), infer only from the hints and say clearly that the file could not be read.",
   ].join("\n");
@@ -165,5 +193,9 @@ export async function extractDocumentAndReviewFromUpload(input: {
   return {
     documentSummary: clipSummary(object.documentSummary.trim()),
     fields: dedupeFieldKeys(fields),
+    actionItems: object.actionItems.map((a) => ({
+      title: a.title.trim(),
+      detail: a.detail.trim(),
+    })),
   };
 }

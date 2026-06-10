@@ -1,0 +1,36 @@
+title: Apply
+source_url: https://www.ssa.gov/apply
+
+Prepare
+Apply
+Return to saved application
+Check application or appeal status
+Appeal a decision we made
+Manage benefits
+Apply for Social Security benefits
+Who do you want to apply for?
+An adult (age 18 and over)
+A child (under age 18)
+What do you want to apply for?
+Benefits
+Retirement
+You worked and paid Social Security taxes.
+Family
+Your current or ex-spouse worked and paid Social Security taxes.
+Disability
+You have a condition and expect it to affect your ability to work for a year or more or will result in death.
+Survivor
+Your spouse or ex-spouse worked and paid Social Security taxes before they died.
+Lump-Sum Death Payment
+Your spouse worked and paid Social Security taxes before they died, and you are the surviving spouse.
+Supplemental Security Income
+
+Supplemental Security Income for Disability
+You're blind or have a disability. And it's hard to pay for essentials like food, clothing, and a home.
+Supplemental Security Income for Age 65+
+You’re 65 or older. And it's hard to pay for essentials like food, clothing, and a home.
+Learn how to apply
+
+Check eligibility if you're not sure what to apply for.
+
+Apply for Medicare if you only need health insurance right now.
