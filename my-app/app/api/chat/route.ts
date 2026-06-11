@@ -1,6 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   buildCitationSource,
   uniqueCitationSources,
@@ -8,7 +9,7 @@ import {
   type FormReferenceRow,
 } from "@/lib/citations";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const maxDuration = 30;
 
 type LanguageCode = "en" | "es" | "zh" | "ar" | "fr";
@@ -27,13 +28,9 @@ const LANGUAGE_NAMES: Record<LanguageCode, string> = {
   fr: "French",
 };
 
-function getSupabase() {
-  return createServerSupabase();
-}
-
 const MAX_DOCUMENT_TEXT_IN_PROMPT = 14_000;
+const TITLE_MAX_LENGTH = 60;
 
-/** Load the uploaded document row so the model can answer in context of this user's file. */
 type DocumentContextResult = {
   context: string;
   searchText: string;
@@ -82,14 +79,14 @@ function inferFormKey(value: string): string | undefined {
 }
 
 async function fetchDocumentContext(
+  supabase: SupabaseClient,
   documentId: string,
 ): Promise<DocumentContextResult> {
-  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("documents")
     .select("file_name, form_type, form_description, ocr_text, ai_extraction")
     .eq("id", documentId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return { context: "", searchText: "" };
 
@@ -237,10 +234,10 @@ function scoreReferenceRow(
 }
 
 async function fetchReferenceRows(
+  supabase: SupabaseClient,
   terms: string[],
   formKey?: string,
 ): Promise<FormReferenceRow[]> {
-  const supabase = getSupabase();
   const cols =
     "id, source, source_url, source_title, section_title, page_number, form_key, content";
   const contentFilter =
@@ -282,6 +279,7 @@ async function fetchReferenceRows(
 
 // Pull the top relevant sections from form_reference using document-aware search.
 async function fetchFormContext(
+  supabase: SupabaseClient,
   userQuery: string,
   documentSearchText: string,
   formKey?: string,
@@ -310,8 +308,10 @@ async function fetchFormContext(
   // parallel. The question might be about a related topic (e.g. immigration
   // rules) that's better covered by a different document than the uploaded form.
   const [formRows, crossRows] = await Promise.all([
-    formKey ? fetchReferenceRows(terms, formKey) : Promise.resolve([]),
-    questionTerms.length > 0 ? fetchReferenceRows(questionTerms) : Promise.resolve([]),
+    formKey ? fetchReferenceRows(supabase, terms, formKey) : Promise.resolve<FormReferenceRow[]>([]),
+    questionTerms.length > 0
+      ? fetchReferenceRows(supabase, questionTerms)
+      : Promise.resolve<FormReferenceRow[]>([]),
   ]);
 
   const merged = [
@@ -353,33 +353,22 @@ async function fetchFormContext(
   return { context, sources };
 }
 
-// Get or create a chat session for a document
-async function getOrCreateSession(
-  documentId: string,
-  language: string
-): Promise<string> {
-  const supabase = getSupabase();
-
-  // Reuse existing session for this document
-  const { data: existing } = await supabase
+/** Touch updated_at (and optionally set title) so the sidebar resorts by recency. */
+async function bumpSession(
+  supabase: SupabaseClient,
+  sessionId: string,
+  patch: { title?: string } = {},
+) {
+  await supabase
     .from("chat_sessions")
-    .select("id")
-    .eq("document_id", documentId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .update({ updated_at: new Date().toISOString(), ...patch })
+    .eq("id", sessionId);
+}
 
-  if (existing) return existing.id;
-
-  // Create a new session
-  const { data: created, error } = await supabase
-    .from("chat_sessions")
-    .insert({ document_id: documentId, language })
-    .select("id")
-    .single();
-
-  if (error || !created) throw new Error("Failed to create chat session");
-  return created.id;
+function makeTitle(text: string): string {
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= TITLE_MAX_LENGTH) return cleaned;
+  return `${cleaned.slice(0, TITLE_MAX_LENGTH - 1).trimEnd()}…`;
 }
 
 function buildSystemPrompt(
@@ -418,38 +407,55 @@ function buildSystemPrompt(
 }
 
 async function saveMessage(
+  supabase: SupabaseClient,
   sessionId: string,
   role: "user" | "assistant",
   content: string,
   citations?: CitationSource[],
 ) {
-  const supabase = getSupabase();
   const row: Record<string, unknown> = { session_id: sessionId, role, content };
   if (citations?.length) row.message_meta = { citations };
   const { error } = await supabase.from("messages").insert(row);
   if (error) console.warn("[saveMessage] error:", error.message);
-  else {
-    console.log(
-      "[saveMessage] saved",
-      role,
-      "message, citations:",
-      citations?.length ?? 0,
-    );
-  }
 }
 
 export async function POST(req: Request) {
-  const { messages, language, documentId, sessionId: incomingSessionId } =
-    (await req.json()) as {
-      messages: ChatUIMessage[];
-      language?: LanguageCode;
-      documentId?: string;
-      sessionId?: string;
-    };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const lang = language ?? "en";
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
-  // Get the last user message for context retrieval
+  const body = (await req.json()) as {
+    messages: ChatUIMessage[];
+    language?: LanguageCode;
+    sessionId?: string;
+  };
+
+  const { messages, sessionId } = body;
+  const lang = body.language ?? "en";
+
+  if (!sessionId) {
+    return Response.json(
+      { error: "sessionId is required" },
+      { status: 400 },
+    );
+  }
+
+  // RLS gates ownership — a session that isn't ours returns null.
+  const { data: session, error: sessionError } = await supabase
+    .from("chat_sessions")
+    .select("id, document_id, title, language")
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (sessionError || !session) {
+    return new Response("Chat session not found", { status: 404 });
+  }
+
   const lastUserMessage =
     [...messages]
       .reverse()
@@ -459,35 +465,27 @@ export async function POST(req: Request) {
       .join(" ")
       .replace(/['"]/g, "")
       .trim() ?? "";
-  const [documentResult, sessionId] = await Promise.all([
-    documentId
-      ? fetchDocumentContext(documentId)
-      : Promise.resolve<DocumentContextResult>({
-          context: "",
-          searchText: "",
-        }),
-    documentId
-      ? incomingSessionId
-        ? Promise.resolve(incomingSessionId)
-        : getOrCreateSession(documentId, lang)
-      : Promise.resolve(null),
-  ]);
 
-  const formResult = await fetchFormContext(
-    lastUserMessage,
-    documentResult.searchText,
-    documentResult.formKey,
-  );
+  const documentResult: DocumentContextResult = session.document_id
+    ? await fetchDocumentContext(supabase, session.document_id)
+    : { context: "", searchText: "" };
+
+  const { context: formContext, sources: citationSources } =
+    await fetchFormContext(
+      supabase,
+      lastUserMessage,
+      documentResult.searchText,
+      documentResult.formKey,
+    );
   const documentContext = documentResult.context;
 
-  const { context: formContext, sources: citationSources } = formResult ?? {
-    context: "",
-    sources: [],
-  };
-
-  // Save the user message to DB if we have a session
-  if (sessionId && lastUserMessage) {
-    await saveMessage(sessionId, "user", lastUserMessage);
+  if (lastUserMessage) {
+    await saveMessage(supabase, sessionId, "user", lastUserMessage);
+    await bumpSession(
+      supabase,
+      sessionId,
+      session.title ? {} : { title: makeTitle(lastUserMessage) },
+    );
   }
 
   const result = streamText({
@@ -495,12 +493,15 @@ export async function POST(req: Request) {
     system: buildSystemPrompt(lang, documentContext, formContext),
     messages: await convertToModelMessages(messages),
     onFinish: async ({ text }: { text: string }) => {
-      console.log(
-        "[onFinish] assistant message done, citations:",
-        citationSources.length,
-      );
-      if (sessionId && text) {
-        await saveMessage(sessionId, "assistant", text, citationSources);
+      if (text) {
+        await saveMessage(
+          supabase,
+          sessionId,
+          "assistant",
+          text,
+          citationSources,
+        );
+        await bumpSession(supabase, sessionId);
       }
     },
   });

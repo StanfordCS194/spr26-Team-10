@@ -66,6 +66,7 @@ export default function MessageBubble({
             ))}
           </div>
         ) : null}
+
         {citations && citations.length > 0 ? (
           <div className={styles.citationList}>
             <span className={styles.citationLabel}>
@@ -78,6 +79,8 @@ export default function MessageBubble({
                   href={c.href}
                   className={styles.citationChip}
                   title={c.snippet}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   {c.label || c.source}
                 </a>

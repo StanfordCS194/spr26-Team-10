@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { buildCitationSource } from "@/lib/citations";
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function CitationRedirectPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const supabase = createServerSupabase();
+  // form_reference is public reference data — admin client bypasses RLS so the
+  // redirect resolves even for signed-out viewers following a citation link.
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("form_reference")
     .select("id, source, content")

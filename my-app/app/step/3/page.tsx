@@ -9,9 +9,9 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   IconArrowUp,
   IconChevronRight,
@@ -25,6 +25,7 @@ import {
 import { AppNav } from "@/components/navigation/app-nav";
 import PdfViewer from "@/components/pdf-viewer/PdfViewer";
 import MessageBubble from "@/app/chat/MessageBubble";
+import ChatHistorySidebar from "@/app/chat/ChatHistorySidebar";
 import type { ChatUIMessage } from "@/app/api/chat/route";
 import type { LanguageOption } from "@/app/chat/LanguageDropdown";
 import { resolveLanguageForStep } from "@/lib/language-preference";
@@ -73,6 +74,14 @@ type UiLabels = {
   suggestQ1: string;
   suggestQ2: string;
   suggestQ3: string;
+  yourChats: string;
+  newChat: string;
+  noChats: string;
+  loadingChats: string;
+  chatsLoadFailed: string;
+  deleteChatConfirm: string;
+  deleteChatLabel: string;
+  untitledChat: string;
   navBack: string;
   hideForm: string;
   viewForm: string;
@@ -116,6 +125,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "What documents do I need to gather?",
     suggestQ2: "What does this line mean?",
     suggestQ3: "Can I file an extension?",
+    yourChats: "Your chats",
+    newChat: "New chat",
+    noChats: "No chats yet. Ask a question to start one.",
+    loadingChats: "Loading chats…",
+    chatsLoadFailed: "Could not load your chats.",
+    deleteChatConfirm: "Delete this chat permanently?",
+    deleteChatLabel: "Delete chat",
+    untitledChat: "Untitled chat",
     navBack: "Back to home",
     hideForm: "Hide form",
     viewForm: "View form",
@@ -157,6 +174,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "¿Qué documentos necesito reunir?",
     suggestQ2: "¿Qué significa esta línea?",
     suggestQ3: "¿Puedo pedir una prórroga?",
+    yourChats: "Tus chats",
+    newChat: "Nuevo chat",
+    noChats: "Aún no tienes chats. Haz una pregunta para empezar.",
+    loadingChats: "Cargando chats…",
+    chatsLoadFailed: "No se pudieron cargar tus chats.",
+    deleteChatConfirm: "¿Eliminar este chat permanentemente?",
+    deleteChatLabel: "Eliminar chat",
+    untitledChat: "Chat sin título",
     navBack: "Volver al inicio",
     hideForm: "Ocultar formulario",
     viewForm: "Ver formulario",
@@ -195,6 +220,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "我需要准备哪些材料？",
     suggestQ2: "这一栏是什么意思？",
     suggestQ3: "我可以申请延期吗？",
+    yourChats: "你的对话",
+    newChat: "新建对话",
+    noChats: "还没有对话，提个问题开始吧。",
+    loadingChats: "正在加载对话…",
+    chatsLoadFailed: "无法加载对话列表。",
+    deleteChatConfirm: "永久删除此对话？",
+    deleteChatLabel: "删除对话",
+    untitledChat: "未命名对话",
     navBack: "返回主页",
     hideForm: "隐藏表格",
     viewForm: "查看表格",
@@ -234,6 +267,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "ما المستندات التي أحتاجها؟",
     suggestQ2: "ماذا يعني هذا السطر؟",
     suggestQ3: "هل يمكنني طلب تمديد؟",
+    yourChats: "محادثاتك",
+    newChat: "محادثة جديدة",
+    noChats: "لا توجد محادثات بعد. اطرح سؤالاً للبدء.",
+    loadingChats: "جارٍ تحميل المحادثات…",
+    chatsLoadFailed: "تعذر تحميل محادثاتك.",
+    deleteChatConfirm: "حذف هذه المحادثة نهائيًا؟",
+    deleteChatLabel: "حذف المحادثة",
+    untitledChat: "محادثة بدون عنوان",
     navBack: "العودة إلى الرئيسية",
     hideForm: "إخفاء النموذج",
     viewForm: "عرض النموذج",
@@ -276,6 +317,14 @@ const uiLabels: Record<LanguageOption["code"], UiLabels> = {
     suggestQ1: "Quels documents dois-je rassembler ?",
     suggestQ2: "Que signifie cette ligne ?",
     suggestQ3: "Puis-je demander une prolongation ?",
+    yourChats: "Vos discussions",
+    newChat: "Nouvelle discussion",
+    noChats: "Aucune discussion. Posez une question pour démarrer.",
+    loadingChats: "Chargement des discussions…",
+    chatsLoadFailed: "Impossible de charger vos discussions.",
+    deleteChatConfirm: "Supprimer définitivement cette discussion ?",
+    deleteChatLabel: "Supprimer la discussion",
+    untitledChat: "Discussion sans titre",
     navBack: "Retour à l'accueil",
     hideForm: "Masquer le formulaire",
     viewForm: "Voir le formulaire",
@@ -330,30 +379,291 @@ function useResizeHandle(
 function SidebarDocSkeleton() {
   return (
     <div className={styles.annotationStack} aria-hidden>
-      <div
-        className={styles.sidebarSkeletonRow}
-        style={{ width: "55%" }}
-      />
-      <div
-        className={styles.sidebarSkeletonRow}
-        style={{ width: "90%" }}
-      />
+      <div className={styles.sidebarSkeletonRow} style={{ width: "55%" }} />
+      <div className={styles.sidebarSkeletonRow} style={{ width: "90%" }} />
     </div>
   );
 }
 
+type ChatThreadProps = {
+  sessionId: string;
+  language: LanguageOption["code"];
+  labels: UiLabels;
+  documentId: string | undefined;
+  pendingSelection?: string | null;
+  onConsumeSelection?: () => void;
+};
+
+function toUIMessage(row: {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}): ChatUIMessage {
+  return {
+    id: row.id,
+    role: row.role,
+    parts: [{ type: "text", text: row.content }],
+  };
+}
+
+function ChatThread({
+  sessionId,
+  language,
+  labels,
+  documentId,
+  pendingSelection,
+  onConsumeSelection,
+}: ChatThreadProps) {
+  const [hydrated, setHydrated] = useState<ChatUIMessage[] | null>(null);
+  const [hydrationError, setHydrationError] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [selectionChip, setSelectionChip] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mirror the page-level pending selection (from PDF text selection) into
+  // local chat state. The page clears its own state via onConsumeSelection so a
+  // re-selected identical string still triggers an effect.
+  useEffect(() => {
+    if (!pendingSelection) return;
+    setSelectionChip(pendingSelection);
+    onConsumeSelection?.();
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }, [pendingSelection, onConsumeSelection]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHydrated(null);
+    setHydrationError(null);
+    fetch(`/api/chat-sessions/${sessionId}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{
+          messages: { id: string; role: "user" | "assistant"; content: string }[];
+        }>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setHydrated(data.messages.map(toUIMessage));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setHydrated([]);
+        setHydrationError(labels.loadFailed);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, labels.loadFailed]);
+
+  const { messages, sendMessage, status, error, regenerate } =
+    useChat<ChatUIMessage>({
+      messages: hydrated ?? [],
+      transport: new DefaultChatTransport({ api: "/api/chat" }),
+    });
+
+  const isBusy = status === "submitted" || status === "streaming";
+  const showTyping = isBusy;
+  const hasConversation = messages.length > 0 || showTyping;
+  const isHydrating = hydrated === null;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, showTyping]);
+
+  const handleSend = useCallback(
+    (text?: string) => {
+      const raw = (text ?? inputValue).trim();
+      if (!raw && !selectionChip) return;
+      if (isBusy) return;
+      const full = selectionChip
+        ? `About this section: "${selectionChip}"${raw ? `\n\n${raw}` : ""}`
+        : raw;
+      sendMessage(
+        { text: full },
+        {
+          body: {
+            sessionId,
+            language,
+          },
+        },
+      );
+      setInputValue("");
+      setSelectionChip(null);
+    },
+    [inputValue, isBusy, language, selectionChip, sendMessage, sessionId],
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (inputValue.trim() || selectionChip) handleSend();
+    }
+  };
+
+  const suggestedQuestions = [
+    labels.suggestQ1,
+    labels.suggestQ2,
+    labels.suggestQ3,
+  ];
+
+  return (
+    <>
+      <div
+        className={styles.messages}
+        aria-busy={isBusy || isHydrating}
+        aria-live="polite"
+      >
+        {isHydrating ? (
+          <p className={styles.disclaimer} style={{ padding: "var(--space-4)" }}>
+            {labels.loadingDocument}
+          </p>
+        ) : !hasConversation ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>
+              <IconSparkles size={22} stroke={1.5} aria-hidden />
+            </div>
+            <h2 className={styles.emptyHeading}>{labels.emptyHeading}</h2>
+            <p className={styles.emptyText}>{labels.emptySubtext}</p>
+            <div className={styles.suggestions}>
+              {suggestedQuestions.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => handleSend(q)}
+                >
+                  {q}
+                  <IconChevronRight size={12} aria-hidden />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {!isHydrating && hasConversation
+          ? messages.map((m) => (
+              <MessageBubble
+                key={m.id}
+                message={m}
+                onSuggestionClick={(value) => setInputValue(value)}
+                citations={m.metadata?.sources}
+              />
+            ))
+          : null}
+
+        {!isHydrating && showTyping ? (
+          <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>
+            <div className={styles.bubbleAvatar}>
+              <IconSparkles size={11} aria-hidden />
+            </div>
+            <div className={styles.typingDots} aria-label={labels.chatWaiting}>
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        ) : null}
+
+        {error || hydrationError ? (
+          <div className={styles.annotationStack}>
+            <div
+              className={styles.annotationCard}
+              style={{ borderColor: "#d70015", background: "#fff2f2" }}
+              role="alert"
+            >
+              <p
+                className={styles.annotationDetail}
+                style={{ color: "#d70015" }}
+              >
+                {error ? labels.errorChat : hydrationError}
+              </p>
+            </div>
+            {error ? (
+              <button
+                type="button"
+                className={styles.suggestionBtn}
+                onClick={() => regenerate()}
+              >
+                {labels.retry}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className={styles.inputArea}>
+        <span className="sr-only">{labels.inputLabel}</span>
+        <div className={styles.inputBox}>
+          {selectionChip && (
+            <div className={styles.selectionChip}>
+              <span className={styles.selectionChipLabel}>
+                {labels.askingAbout}
+              </span>
+              <span className={styles.selectionChipText}>
+                &quot;{selectionChip}&quot;
+              </span>
+              <button
+                type="button"
+                className={styles.selectionChipDismiss}
+                onClick={() => setSelectionChip(null)}
+                aria-label="Remove selection context"
+              >
+                <IconX size={10} aria-hidden />
+              </button>
+            </div>
+          )}
+          <div className={styles.inputRow}>
+            <textarea
+              ref={textareaRef}
+              className={styles.textarea}
+              placeholder={
+                !documentId
+                  ? labels.chatDisabledPlaceholder
+                  : selectionChip
+                    ? labels.addQuestion
+                    : labels.chatPlaceholder
+              }
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              disabled={isBusy || isHydrating}
+              aria-label={labels.inputLabel}
+            />
+            <button
+              type="button"
+              className={styles.sendBtn}
+              onClick={() => handleSend()}
+              disabled={
+                (!inputValue.trim() && !selectionChip) || isBusy || isHydrating
+              }
+              aria-label="Send message"
+            >
+              <IconArrowUp size={14} aria-hidden />
+            </button>
+          </div>
+        </div>
+        <p className={styles.disclaimer}>{labels.footerHint}</p>
+      </div>
+    </>
+  );
+}
+
 function ChatPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId") ?? undefined;
+  const sessionId = searchParams.get("sessionId") ?? undefined;
 
   const selectedLanguage = useMemo(
-    (): LanguageOption =>
-      resolveLanguageForStep(searchParams.get("language")),
+    (): LanguageOption => resolveLanguageForStep(searchParams.get("language")),
     [searchParams],
   );
 
-  const [inputValue, setInputValue] = useState("");
-  const [selectionChip, setSelectionChip] = useState<string | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<string | null>(null);
   const [sidebarDocument, setSidebarDocument] =
     useState<SidebarDocument | null>(null);
   const [showDocViewer, setShowDocViewer] = useState(false);
@@ -365,6 +675,7 @@ function ChatPageContent() {
   const [sidebarError, setSidebarError] = useState("");
   const [sidebarLoading, setSidebarLoading] = useState(false);
   const [sidebarFetchKey, setSidebarFetchKey] = useState(0);
+  const [creatingSession, setCreatingSession] = useState(false);
 
   const sidebarResize = useResizeHandle(
     () => sidebarWidth, setSidebarWidth, 180, 480,
@@ -376,21 +687,48 @@ function ChatPageContent() {
   const labels = uiLabels[selectedLanguage.code];
   const isRtl = selectedLanguage.code === "ar";
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const handleAskAboutSelection = useCallback((text: string) => {
+    setPendingSelection(text);
+  }, []);
 
-  const { messages, sendMessage, status, error, regenerate } =
-    useChat<ChatUIMessage>({
-      messages: [],
-      transport: new DefaultChatTransport({ api: "/api/chat" }),
-    });
-
-  const isBusy = status === "submitted" || status === "streaming";
-  const showTyping = isBusy;
-
+  // Auto-create a chat session whenever we have a documentId but no sessionId
+  // in the URL. The replace() call rewrites the URL so we land on a stable
+  // /step/3?documentId=...&sessionId=... that the user can bookmark or share.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, showTyping]);
+    if (!documentId || sessionId || creatingSession) return;
+    let cancelled = false;
+    setCreatingSession(true);
+
+    fetch("/api/chat-sessions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        documentId,
+        language: selectedLanguage.code,
+      }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<{ session: { id: string } }>;
+      })
+      .then(({ session }) => {
+        if (cancelled) return;
+        const params = new URLSearchParams({
+          documentId,
+          sessionId: session.id,
+          language: selectedLanguage.code,
+        });
+        router.replace(`/step/3?${params.toString()}`);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCreatingSession(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId, sessionId, creatingSession, selectedLanguage.code, router]);
 
   useEffect(() => {
     const loadFailedLabel = uiLabels[selectedLanguage.code].loadFailed;
@@ -428,9 +766,7 @@ function ChatPageContent() {
         }
       } catch (e) {
         if (!cancelled) {
-          setSidebarError(
-            e instanceof Error ? e.message : loadFailedLabel,
-          );
+          setSidebarError(e instanceof Error ? e.message : loadFailedLabel);
           setSidebarDocument(null);
           setSidebarActionItems([]);
         }
@@ -445,51 +781,9 @@ function ChatPageContent() {
     };
   }, [documentId, selectedLanguage.code, sidebarFetchKey]);
 
-  const handleSend = (text?: string) => {
-    const raw = (text ?? inputValue).trim();
-    if ((!raw && !selectionChip) || isBusy || !documentId) return;
-    const full = selectionChip
-      ? `About this section: "${selectionChip}"${raw ? `\n\n${raw}` : ""}`
-      : raw;
-    sendMessage(
-      { text: full },
-      {
-        body: {
-          documentId,
-          language: selectedLanguage.code,
-        },
-      },
-    );
-    setInputValue("");
-    setSelectionChip(null);
-  };
-
-  const handleAskAboutSelection = (text: string) => {
-    setSelectionChip(text);
-    setTimeout(() => textareaRef.current?.focus(), 50);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (inputValue.trim() || selectionChip) handleSend();
-    }
-  };
-
-  const documentTitle =
-    sidebarDocument?.fileName ?? labels.noDocumentTitle;
+  const documentTitle = sidebarDocument?.fileName ?? labels.noDocumentTitle;
   const documentSubtitle =
-    sidebarDocument?.formDescription ??
-    sidebarDocument?.formType ??
-    "";
-
-  const suggestedQuestions = [
-    labels.suggestQ1,
-    labels.suggestQ2,
-    labels.suggestQ3,
-  ];
-
-  const hasConversation = messages.length > 0 || showTyping;
+    sidebarDocument?.formDescription ?? sidebarDocument?.formType ?? "";
 
   return (
     <div dir={isRtl ? "rtl" : "ltr"} className={styles.page}>
@@ -497,6 +791,24 @@ function ChatPageContent() {
 
       <div className={styles.body}>
         <aside className={styles.sidebar} style={{ width: sidebarWidth }}>
+          <div className={styles.sidebarSection}>
+            <ChatHistorySidebar
+              currentSessionId={sessionId ?? null}
+              currentDocumentId={documentId ?? null}
+              currentLanguage={selectedLanguage.code}
+              labels={{
+                heading: labels.yourChats,
+                newChat: labels.newChat,
+                empty: labels.noChats,
+                loading: labels.loadingChats,
+                loadFailed: labels.chatsLoadFailed,
+                deleteConfirm: labels.deleteChatConfirm,
+                deleteAria: labels.deleteChatLabel,
+                untitled: labels.untitledChat,
+              }}
+            />
+          </div>
+
           <div className={styles.sidebarSection}>
             <p className={styles.sidebarEyebrow}>{labels.currentDocument}</p>
             <div className={styles.docCard}>
@@ -590,7 +902,10 @@ function ChatPageContent() {
           ) : null}
 
           <div className={styles.sidebarFooter}>
-            <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.uploadNewBtn}>
+            <Link
+              href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`}
+              className={styles.uploadNewBtn}
+            >
               <IconUpload size={13} aria-hidden />
               {labels.uploadNewDocument}
             </Link>
@@ -658,145 +973,40 @@ function ChatPageContent() {
             <p className={styles.stepBadge}>{labels.stepBadgeLabel}</p>
           </div>
 
-          <div
-            className={styles.messages}
-            aria-busy={isBusy}
-            aria-live="polite"
-          >
-            {!documentId ? (
+          {!documentId ? (
+            <div className={styles.messages}>
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>
                   <IconSparkles size={22} stroke={1.5} aria-hidden />
                 </div>
                 <h2 className={styles.emptyHeading}>{labels.noDocumentTitle}</h2>
                 <p className={styles.emptyText}>{labels.noDocumentBody}</p>
-                <Link href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`} className={styles.suggestionBtn}>
+                <Link
+                  href={`/step/1?language=${encodeURIComponent(selectedLanguage.code)}`}
+                  className={styles.suggestionBtn}
+                >
                   {labels.goUpload}
                   <IconChevronRight size={12} aria-hidden />
                 </Link>
               </div>
-            ) : !hasConversation ? (
-              <div className={styles.emptyState}>
-                <div className={styles.emptyIcon}>
-                  <IconSparkles size={22} stroke={1.5} aria-hidden />
-                </div>
-                <h2 className={styles.emptyHeading}>{labels.emptyHeading}</h2>
-                <p className={styles.emptyText}>{labels.emptySubtext}</p>
-                <div className={styles.suggestions}>
-                  {suggestedQuestions.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className={styles.suggestionBtn}
-                      onClick={() => handleSend(q)}
-                    >
-                      {q}
-                      <IconChevronRight size={12} aria-hidden />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {documentId && hasConversation
-              ? messages.map((m) => (
-                  <MessageBubble
-                    key={m.id}
-                    message={m}
-                    onSuggestionClick={(value) => setInputValue(value)}
-                    citations={m.metadata?.sources}
-                  />
-                ))
-              : null}
-
-            {documentId && showTyping ? (
-              <div className={`${styles.bubble} ${styles.bubbleAssistant}`}>
-                <div className={styles.bubbleAvatar}>
-                  <IconSparkles size={11} aria-hidden />
-                </div>
-                <div className={styles.typingDots} aria-label={labels.chatWaiting}>
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className={styles.annotationStack}>
-                <div
-                  className={styles.annotationCard}
-                  style={{
-                    borderColor: "#d70015",
-                    background: "#fff2f2",
-                  }}
-                  role="alert"
-                >
-                  <p className={styles.annotationDetail} style={{ color: "#d70015" }}>
-                    {labels.errorChat}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.suggestionBtn}
-                  onClick={() => regenerate()}
-                >
-                  {labels.retry}
-                </button>
-              </div>
-            ) : null}
-
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className={styles.inputArea}>
-            <span className="sr-only">{labels.inputLabel}</span>
-            <div className={styles.inputBox}>
-              {selectionChip && (
-                <div className={styles.selectionChip}>
-                  <span className={styles.selectionChipLabel}>{labels.askingAbout}</span>
-                  <span className={styles.selectionChipText}>"{selectionChip}"</span>
-                  <button
-                    type="button"
-                    className={styles.selectionChipDismiss}
-                    onClick={() => setSelectionChip(null)}
-                    aria-label="Remove selection context"
-                  >
-                    <IconX size={10} aria-hidden />
-                  </button>
-                </div>
-              )}
-              <div className={styles.inputRow}>
-                <textarea
-                  ref={textareaRef}
-                  className={styles.textarea}
-                  placeholder={
-                    !documentId
-                      ? labels.chatDisabledPlaceholder
-                      : selectionChip
-                      ? labels.addQuestion
-                      : labels.chatPlaceholder
-                  }
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  disabled={!documentId || isBusy}
-                  aria-label={labels.inputLabel}
-                />
-                <button
-                  type="button"
-                  className={styles.sendBtn}
-                  onClick={() => handleSend()}
-                  disabled={!documentId || (!inputValue.trim() && !selectionChip) || isBusy}
-                  aria-label="Send message"
-                >
-                  <IconArrowUp size={14} aria-hidden />
-                </button>
-              </div>
             </div>
-            <p className={styles.disclaimer}>{labels.footerHint}</p>
-          </div>
+          ) : !sessionId ? (
+            <div className={styles.messages}>
+              <p className={styles.disclaimer} style={{ padding: "var(--space-4)" }}>
+                {labels.loadingDocument}
+              </p>
+            </div>
+          ) : (
+            <ChatThread
+              key={sessionId}
+              sessionId={sessionId}
+              language={selectedLanguage.code}
+              labels={labels}
+              documentId={documentId}
+              pendingSelection={pendingSelection}
+              onConsumeSelection={() => setPendingSelection(null)}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,9 @@
-import { createServerSupabase } from "@/lib/supabase-server";
+import { createClient } from "@/lib/supabase/server";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const runtime = "nodejs";
 
 export async function GET(
   _req: Request,
@@ -17,7 +19,13 @@ export async function GET(
       return Response.json({ error: "Invalid document id" }, { status: 400 });
     }
 
-    const supabase = createServerSupabase();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const [{ data: document, error: documentError }, { data: actionItems, error: actionItemsError }] =
       await Promise.all([
